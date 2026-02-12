@@ -1,0 +1,8 @@
+
+{
+  "name": "HRFILM.COM",
+  "description": "A premium, single-feature movie booking experience with AI-powered insights, secure payment simulation, and QR ticket generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
