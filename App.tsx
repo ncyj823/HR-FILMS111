@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from './components/Layout';
 import AuthModal from './components/AuthModal';
-import { BookingStep, Movie, Seat, BookingDetails, User } from './types';
-import { FEATURED_MOVIE, SHOW_TIMES, SEATS_DATA } from './constants';
+import { BookingStep, Seat, BookingDetails, User } from './types';
+import { FEATURED_MOVIES, SHOW_TIMES, SEATS_DATA } from './constants';
 import { getMovieInsights } from './services/geminiService';
 
 const App: React.FC = () => {
@@ -12,7 +11,10 @@ const App: React.FC = () => {
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
-  
+
+  const [selectedMovieId, setSelectedMovieId] = useState<string>(FEATURED_MOVIES[0].id);
+  const selectedMovie = FEATURED_MOVIES.find(m => m.id === selectedMovieId) ?? FEATURED_MOVIES[0];
+
   // Auth state
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -31,11 +33,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const fetchInsights = async () => {
-      const data = await getMovieInsights(FEATURED_MOVIE.title);
+      const data = await getMovieInsights(selectedMovie.title);
       setInsights(data);
     };
     fetchInsights();
-  }, []);
+  }, [selectedMovie.title]);
 
   const handleBookingStart = () => {
     if (!currentUser) {
@@ -72,34 +74,30 @@ const App: React.FC = () => {
   const totalAmount = selectedSeats.reduce((acc, seat) => acc + seat.price, 0);
 
   const handlePayment = () => {
-    if (paymentMode === 'personal' && !personalContact) {
+    if (!personalContact) {
       alert("Please provide your contact info so the owner can reach you.");
       return;
     }
 
-    if (paymentMode === 'personal') {
-      setIsNotifying(true);
-      // Simulate owner notification delay
-      setTimeout(() => {
-        setIsNotifying(false);
-        setShowOwnerAlert(true);
-        setTimeout(() => setShowOwnerAlert(false), 5000);
-        completeBooking();
-      }, 1500);
-    } else {
+    setIsNotifying(true);
+    // Simulate owner notification delay
+    setTimeout(() => {
+      setIsNotifying(false);
+      setShowOwnerAlert(true);
+      setTimeout(() => setShowOwnerAlert(false), 5000);
       completeBooking();
-    }
+    }, 1500);
   };
 
   const completeBooking = () => {
     const details: BookingDetails = {
-      movieId: FEATURED_MOVIE.id,
+      movieId: selectedMovie.id,
       selectedSeats,
       totalAmount,
       bookingDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
       showTime: selectedTime,
       transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-      paymentMethod: paymentMode,
+      paymentMethod: 'personal',
       contactInfo: personalContact
     };
     setBookingDetails(details);
@@ -210,11 +208,11 @@ const App: React.FC = () => {
             <div className="lg:col-span-5 relative overflow-hidden rounded-2xl shadow-2xl shadow-black border-4 border-red-600 glow-red">
               <div className="aspect-[2/3] w-full bg-neutral-900">
                 <img 
-                  src={FEATURED_MOVIE.posterUrl} 
-                  alt={FEATURED_MOVIE.title} 
+                  src={selectedMovie.posterUrl} 
+                  alt={selectedMovie.title} 
                   className="w-full h-full object-cover" 
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1000&auto=format&fit=crop';
+                    (e.target as HTMLImageElement).src = 'C:\Users\KIIT\Desktop\HR FILMS\dist\assets\posters\dhurandhar2.jpg.webp';
                   }}
                 />
               </div>
@@ -223,16 +221,30 @@ const App: React.FC = () => {
             <div className="lg:col-span-7">
               <div className="flex items-center gap-3 mb-4">
                 <span className="bg-red-600 text-[10px] font-extrabold px-2 py-1 rounded tracking-widest uppercase">Now Booking</span>
-                <span className="text-gray-400 text-sm">{FEATURED_MOVIE.rating} ★ Rating</span>
+                <span className="text-gray-400 text-sm">{selectedMovie.rating} ★ Rating</span>
               </div>
-              <h1 className="text-5xl md:text-7xl font-oswald font-bold mb-6 tracking-tight leading-none uppercase italic">{FEATURED_MOVIE.title}</h1>
+
+              <div className="flex items-center gap-3 mb-4">
+                <label className="text-xs font-bold text-gray-500 uppercase">Featured Movie</label>
+                <select
+                  className="bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-sm"
+                  value={selectedMovieId}
+                  onChange={(e) => setSelectedMovieId(e.target.value)}
+                >
+                  {FEATURED_MOVIES.map(m => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <h1 className="text-5xl md:text-7xl font-oswald font-bold mb-6 tracking-tight leading-none uppercase italic">{selectedMovie.title}</h1>
               <div className="flex flex-wrap gap-4 mb-8">
-                {FEATURED_MOVIE.genre.map(g => (
+                {selectedMovie.genre.map(g => (
                   <span key={g} className="text-xs text-white/60 border border-white/20 px-3 py-1 rounded-full">{g}</span>
                 ))}
-                <span className="text-xs text-white/60 border border-white/20 px-3 py-1 rounded-full">{FEATURED_MOVIE.duration}</span>
+                <span className="text-xs text-white/60 border border-white/20 px-3 py-1 rounded-full">{selectedMovie.duration}</span>
               </div>
-              <p className="text-gray-400 text-lg mb-10 leading-relaxed max-w-2xl">{FEATURED_MOVIE.description}</p>
+              <p className="text-gray-400 text-lg mb-10 leading-relaxed max-w-2xl">{selectedMovie.description}</p>
               
               <div className="mb-10">
                 <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -279,43 +291,79 @@ const App: React.FC = () => {
 
         {/* Step 2: Seat Selection */}
         {step === BookingStep.SEAT_SELECTION && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-oswald font-bold text-center mb-12 uppercase">Choose Your Vibe</h2>
+            
+            {/* Screen */}
             <div className="relative mb-16 px-10">
-              <div className="h-2 w-full bg-white/20 rounded-t-full glow-white shadow-[0_-10px_30px_rgba(255,255,255,0.1)]"></div>
-              <p className="text-center text-[10px] text-gray-600 font-bold tracking-[0.3em] mt-2 uppercase">Screen</p>
+              <div className="h-3 w-full bg-gradient-to-b from-white/30 to-white/10 rounded-t-full glow-white shadow-[0_-10px_30px_rgba(255,255,255,0.2)]"></div>
+              <p className="text-center text-[10px] text-gray-400 font-bold tracking-[0.4em] mt-3 uppercase">Screen</p>
             </div>
 
-            <div className="grid grid-cols-12 gap-3 mb-12">
-              {SEATS_DATA.map((seat) => {
-                const isSelected = selectedSeats.find(s => s.id === seat.id);
+            {/* Seating Layout */}
+            <div className="seating-wrapper mb-12">
+              {(() => {
+                const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+                const seats = SEATS_DATA;
+
+                const renderSeat = (seat: Seat) => {
+                  const isSelected = selectedSeats.find(s => s.id === seat.id);
+                  return (
+                    <button
+                      key={seat.id}
+                      disabled={seat.isBooked}
+                      onClick={() => toggleSeat(seat)}
+                      className={`w-8 h-8 rounded text-[9px] font-bold flex items-center justify-center transition-all ${
+                        seat.isBooked ? 'bg-neutral-800 text-neutral-700 cursor-not-allowed' :
+                        isSelected ? 'bg-red-600 text-white scale-110 shadow-[0_0_15px_rgba(220,38,38,0.6)]' :
+                        'bg-white/10 border border-white/20 text-white/50 hover:bg-white/20 hover:border-white/40'
+                      }`}
+                    >
+                      {seat.id}
+                    </button>
+                  );
+                };
+
                 return (
-                  <button
-                    key={seat.id}
-                    disabled={seat.isBooked}
-                    onClick={() => toggleSeat(seat)}
-                    className={`aspect-square rounded-sm text-[8px] font-bold flex items-center justify-center transition-all ${
-                      seat.isBooked ? 'bg-neutral-800 text-transparent cursor-not-allowed' :
-                      isSelected ? 'bg-red-600 text-white scale-110 shadow-[0_0_10px_rgba(220,38,38,0.5)]' :
-                      seat.type === 'vip' ? 'bg-amber-600/20 border border-amber-600/50 text-amber-600' :
-                      seat.type === 'premium' ? 'bg-blue-600/20 border border-blue-600/50 text-blue-600' :
-                      'bg-white/10 border border-white/10 text-white/40 hover:bg-white/20'
-                    }`}
-                  >
-                    {seat.id}
-                  </button>
+                  <div className="seating-container space-y-3">
+                    {rows.map((row) => {
+                      const rowSeats = seats.filter(seat => seat.row === row);
+                      const left = rowSeats.filter(seat => seat.number <= 6);
+                      const center = rowSeats.filter(seat => seat.number >= 7 && seat.number <= 18);
+                      const right = rowSeats.filter(seat => seat.number >= 19);
+
+                      return (
+                        <div key={row} className="flex items-center justify-center gap-8">
+                          {/* Left Block */}
+                          <div className="flex gap-2">
+                            {left.map(seat => renderSeat(seat))}
+                          </div>
+
+                          {/* Center Block */}
+                          <div className="flex gap-2 px-4">
+                            {center.map(seat => renderSeat(seat))}
+                          </div>
+
+                          {/* Right Block */}
+                          <div className="flex gap-2">
+                            {right.map(seat => renderSeat(seat))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 );
-              })}
+              })()}
             </div>
 
+            {/* Legend */}
             <div className="flex flex-wrap justify-center gap-8 text-xs font-bold text-gray-500 mb-12 border-t border-white/5 pt-8">
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-sm bg-neutral-800"></div> Booked</div>
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-sm bg-white/10 border border-white/10"></div> Standard ($12.99)</div>
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-sm bg-blue-600/20 border border-blue-600/50"></div> Premium ($18.99)</div>
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-sm bg-amber-600/20 border border-amber-600/50"></div> VIP ($24.99)</div>
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-sm bg-red-600"></div> Selected</div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 rounded bg-neutral-800"></div> Booked</div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 rounded bg-white/10 border border-white/20"></div> Available</div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 rounded bg-red-600"></div> Selected</div>
             </div>
 
+            {/* Summary Panel */}
             <div className="glass-panel rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-6 border border-white/10 shadow-2xl">
               <div>
                 <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Seats Selection</p>
@@ -324,7 +372,7 @@ const App: React.FC = () => {
                     <span key={s.id} className="text-white font-bold bg-white/10 px-2 py-1 rounded text-sm">{s.id}</span>
                   )) : <span className="text-gray-600 italic text-sm">No seats selected yet</span>}
                 </div>
-                <p className="text-2xl font-bold font-oswald">${totalAmount.toFixed(2)}</p>
+                <p className="text-2xl font-bold font-oswald">₹{totalAmount.toFixed(2)}</p>
               </div>
               <div className="flex gap-4">
                 <button onClick={() => setStep(BookingStep.MOVIE_INFO)} className="px-8 py-3 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all">Back</button>
@@ -349,10 +397,10 @@ const App: React.FC = () => {
               <h2 className="text-3xl font-oswald font-bold mb-8 uppercase">Order Summary</h2>
               <div className="glass-panel rounded-2xl overflow-hidden border border-white/10">
                 <div className="p-6 border-b border-white/5 flex gap-4">
-                  <img src={FEATURED_MOVIE.posterUrl} className="w-20 h-28 object-cover rounded-lg border-2 border-red-600" alt="" />
+                  <img src={selectedMovie.posterUrl} className="w-20 h-28 object-cover rounded-lg border-2 border-red-600" alt="" />
                   <div>
-                    <h4 className="font-bold text-lg mb-1">{FEATURED_MOVIE.title}</h4>
-                    <p className="text-xs text-gray-500 mb-2">{selectedTime} • {FEATURED_MOVIE.duration}</p>
+                    <h4 className="font-bold text-lg mb-1">{selectedMovie.title}</h4>
+                    <p className="text-xs text-gray-500 mb-2">{selectedTime} • {selectedMovie.duration}</p>
                     <p className="text-xs text-gray-500 italic">HR Cinema • Hall 4</p>
                   </div>
                 </div>
@@ -376,56 +424,22 @@ const App: React.FC = () => {
             <div>
               <h2 className="text-3xl font-oswald font-bold mb-8 uppercase">Payment Details</h2>
               
-              <div className="flex p-1 bg-white/5 rounded-xl border border-white/10 mb-8">
-                <button 
-                  onClick={() => setPaymentMode('card')}
-                  className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${paymentMode === 'card' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                >
-                  <i className="fas fa-credit-card mr-2"></i> Digital Card
-                </button>
-                <button 
-                  onClick={() => setPaymentMode('personal')}
-                  className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${paymentMode === 'personal' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                >
-                  <i className="fas fa-hand-holding-usd mr-2"></i> Personal Payment
-                </button>
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="bg-red-600/10 border border-red-600/20 p-4 rounded-xl mb-6">
+                  <p className="text-xs text-red-500 font-bold mb-1 uppercase tracking-widest">Personal Pay Flow</p>
+                  <p className="text-[11px] text-gray-400">The owner will be notified to collect payment personally. Please provide your contact info below.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Contact Phone or Email</label>
+                  <input 
+                    type="text" 
+                    placeholder="+1 234 567 8900 or mail@domain.com" 
+                    className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-red-600 transition-colors"
+                    value={personalContact}
+                    onChange={(e) => setPersonalContact(e.target.value)}
+                  />
+                </div>
               </div>
-
-              {paymentMode === 'card' ? (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Card Number</label>
-                    <input type="text" placeholder="XXXX XXXX XXXX XXXX" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-red-600 transition-colors" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Expiry</label>
-                      <input type="text" placeholder="MM/YY" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-red-600 transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">CVV</label>
-                      <input type="password" placeholder="***" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-red-600 transition-colors" />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="bg-red-600/10 border border-red-600/20 p-4 rounded-xl mb-6">
-                    <p className="text-xs text-red-500 font-bold mb-1 uppercase tracking-widest">Personal Pay Flow</p>
-                    <p className="text-[11px] text-gray-400">The owner will be notified to collect payment personally. Please provide your contact info below.</p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Contact Phone or Email</label>
-                    <input 
-                      type="text" 
-                      placeholder="+1 234 567 8900 or mail@domain.com" 
-                      className="w-full bg-white/5 border border-white/10 p-4 rounded-xl focus:outline-none focus:border-red-600 transition-colors"
-                      value={personalContact}
-                      onChange={(e) => setPersonalContact(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-4 pt-8">
                 <button onClick={() => setStep(BookingStep.SEAT_SELECTION)} className="flex-1 py-4 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all">Back</button>
@@ -438,7 +452,7 @@ const App: React.FC = () => {
                     <span className="flex items-center justify-center gap-2">
                       <i className="fas fa-circle-notch animate-spin"></i> Alerting Owner...
                     </span>
-                  ) : paymentMode === 'card' ? 'Pay Now' : 'Notify Owner & Book'}
+                  ) : 'Notify Owner & Book'}
                 </button>
               </div>
             </div>
@@ -464,7 +478,7 @@ const App: React.FC = () => {
               <div className="p-8 bg-black text-white relative border-b-2 border-dashed border-white/20">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-2xl font-oswald font-bold leading-tight uppercase italic">{FEATURED_MOVIE.title}</h3>
+                    <h3 className="text-2xl font-oswald font-bold leading-tight uppercase italic">{selectedMovie.title}</h3>
                     <p className="text-[10px] text-red-500 font-bold tracking-[0.2em] uppercase mt-1">
                       {bookingDetails.paymentMethod === 'personal' ? 'Pending Payment Verification' : 'Confirmed Admission'}
                     </p>

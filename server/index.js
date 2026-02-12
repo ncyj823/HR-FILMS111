@@ -18,30 +18,41 @@ app.post("/book", async (req, res) => {
   const qrData = bookingId;
   const qrImage = await QRCode.toDataURL(qrData);
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: "ncy1504@gmail.com",
-      pass: "tdllgdfagbboqinb"
-    }
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "ncy1504@gmail.com",
+    pass: "tdllgdfagbboqinb"
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
-  await transporter.sendMail({
-    from: "ncy1504@gmail.com",
-    to: "hriturajs33@gmail.com",
-    subject: "New Movie Booking 🎬",
-    html: `
-      <h2>New Booking</h2>
-      <p><b>ID:</b> ${bookingId}</p>
-      <p><b>Name:</b> ${name}</p>
-      <p><b>Phone:</b> ${phone}</p>
-      <p><b>Movie:</b> ${movie}</p>
-      <p><b>Seats:</b> ${seats.join(", ")}</p>
-      <img src="${qrImage}" />
-    `
-  });
 
-  res.json({ bookingId, qrImage });
+    await transporter.sendMail({
+      from: process.env.SMTP_USER || "ncy1504@gmail.com",
+      to: "hriturajs33@gmail.com",
+      subject: "New Movie Booking 🎬",
+      html: `
+        <h2>New Booking</h2>
+        <p><b>ID:</b> ${bookingId}</p>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Phone:</b> ${phone}</p>
+        <p><b>Movie:</b> ${movie}</p>
+        <p><b>Seats:</b> ${seats.join(", ")}</p>
+        <img src="${qrImage}" />
+      `
+    });
+
+    res.json({ bookingId, qrImage });
+  } catch (error) {
+    res.status(500).json({
+      error: "Email send failed",
+      details: error.message
+    });
+  }
 });
 
 app.listen(5000, () => console.log("Server running on port 5000"));
