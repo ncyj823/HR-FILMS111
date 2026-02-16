@@ -11,7 +11,7 @@ app.get("/",(req,res)=>{
 });
 
 app.post("/book", async (req, res) => {
-  const { name, phone, seats, movie } = req.body;
+  const { name, phone, seats, movie, paymentMethod, referenceNo } = req.body;
 
   const bookingId = "TKT" + Math.floor(100000 + Math.random() * 900000);
 
@@ -42,6 +42,8 @@ app.post("/book", async (req, res) => {
         <p><b>Phone:</b> ${phone}</p>
         <p><b>Movie:</b> ${movie}</p>
         <p><b>Seats:</b> ${seats.join(", ")}</p>
+        <p><b>Payment Method:</b> ${paymentMethod}</p>
+        <p><b>Reference No:</b> ${referenceNo}</p>
         <img src="${qrImage}" />
       `
     });

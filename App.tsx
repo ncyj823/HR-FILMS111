@@ -31,8 +31,16 @@ const App: React.FC = () => {
   // Payment states
   const [paymentMode, setPaymentMode] = useState<'card' | 'personal'>('card');
   const [personalContact, setPersonalContact] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('GCash');
+  const [referenceNo, setReferenceNo] = useState('');
   const [isNotifying, setIsNotifying] = useState(false);
   const [showOwnerAlert, setShowOwnerAlert] = useState(false);
+
+  const getSeatPrice = (row: string) => {
+    if (row === 'A' || row === 'B') return 800;
+    if (row === 'C' || row === 'D') return 950;
+    return 1100; // E to L
+  };
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -67,11 +75,20 @@ const App: React.FC = () => {
 
   const toggleSeat = (seat: Seat) => {
     if (seat.isBooked) return;
-    setSelectedSeats(prev => 
-      prev.find(s => s.id === seat.id)
-        ? prev.filter(s => s.id !== seat.id)
-        : [...prev, seat]
-    );
+
+    const isSelected = selectedSeats.find(s => s.id === seat.id);
+
+    if (isSelected) {
+      setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+    } else {
+      setSelectedSeats([
+        ...selectedSeats,
+        {
+          ...seat,
+          price: getSeatPrice(seat.row)
+        }
+      ]);
+    }
   };
 
   const totalAmount = selectedSeats.reduce((acc, seat) => acc + seat.price, 0);
@@ -106,6 +123,45 @@ const App: React.FC = () => {
       const message = error instanceof Error ? error.message : 'Booking failed';
       alert(message);
       return false;
+    }
+  };
+
+  const handleManualPayment = async () => {
+    if (!referenceNo) {
+      alert('Enter payment reference number');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: currentUser?.name || 'Guest',
+          phone: personalContact,
+          seats: selectedSeats.map(seat => seat.id),
+          movie: selectedMovie.title,
+          paymentMethod,
+          referenceNo
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message = data?.error || 'Booking failed';
+        throw new Error(message);
+      }
+
+      setBookingId(data.bookingId);
+      setQrImage(data.qrImage);
+      setStep(BookingStep.TICKET);
+    } catch (error) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : 'Booking failed';
+      alert(message);
     }
   };
 
@@ -470,6 +526,36 @@ const App: React.FC = () => {
                   <p className="text-xs text-red-500 font-bold mb-1 uppercase tracking-widest">Personal Pay Flow</p>
                   <p className="text-[11px] text-gray-400">The owner will be notified to collect payment personally. Please provide your contact info below.</p>
                 </div>
+                <div className="flex gap-4 mb-6">
+                  {["GCash", "BDO", "BPI"].map(method => (
+                    <button
+                      key={method}
+                      onClick={() => setPaymentMethod(method)}
+                      className={`px-6 py-3 rounded-xl border transition-all ${
+                        paymentMethod === method
+                          ? "border-blue-500 bg-blue-500/10"
+                          : "border-white/20"
+                      }`}
+                    >
+                      {method}
+                    </button>
+                  ))}
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl mb-6">
+                  <p className="text-sm">
+                    Pay ₹{totalAmount} to {paymentMethod}:
+                  </p>
+                  <p className="text-lg font-bold">
+                    09158222220
+                  </p>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Enter Reference Number"
+                  value={referenceNo}
+                  onChange={(e) => setReferenceNo(e.target.value)}
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 mb-6"
+                />
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Contact Phone or Email</label>
                   <input 

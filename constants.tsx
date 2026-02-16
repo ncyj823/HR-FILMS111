@@ -33,7 +33,7 @@ export const FEATURED_MOVIES: Movie[] = [
 
 export const FEATURED_MOVIE: Movie = FEATURED_MOVIES[0];
 
-export const SHOW_TIMES = [ '05:00 PM', '08:30 PM'];
+export const SHOW_TIMES = [  '08:00 PM'];
 
 export const generateSeats = (): Seat[] => {
   const seats: Seat[] = [];
