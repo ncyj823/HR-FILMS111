@@ -12,6 +12,9 @@ const App: React.FC = () => {
   const [insights, setInsights] = useState<string[]>([]);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
+  const [bookingId, setBookingId] = useState('');
+  const [qrImage, setQrImage] = useState('');
+
   const [selectedMovieId, setSelectedMovieId] = useState<string>(FEATURED_MOVIES[0].id);
   const selectedMovie = FEATURED_MOVIES.find(m => m.id === selectedMovieId) ?? FEATURED_MOVIES[0];
 
@@ -73,13 +76,51 @@ const App: React.FC = () => {
 
   const totalAmount = selectedSeats.reduce((acc, seat) => acc + seat.price, 0);
 
-  const handlePayment = () => {
+  const handleBooking = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: currentUser?.name || 'Guest',
+          phone: personalContact,
+          seats: selectedSeats.map(seat => seat.id),
+          movie: selectedMovie.title
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message = data?.error || 'Booking failed';
+        throw new Error(message);
+      }
+
+      setBookingId(data.bookingId);
+      setQrImage(data.qrImage);
+      return true;
+    } catch (error) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : 'Booking failed';
+      alert(message);
+      return false;
+    }
+  };
+
+  const handlePayment = async () => {
     if (!personalContact) {
       alert("Please provide your contact info so the owner can reach you.");
       return;
     }
 
     setIsNotifying(true);
+    const bookingOk = await handleBooking();
+    if (!bookingOk) {
+      setIsNotifying(false);
+      return;
+    }
     // Simulate owner notification delay
     setTimeout(() => {
       setIsNotifying(false);
@@ -443,6 +484,12 @@ const App: React.FC = () => {
 
               <div className="flex gap-4 pt-8">
                 <button onClick={() => setStep(BookingStep.SEAT_SELECTION)} className="flex-1 py-4 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all">Back</button>
+                <button
+                  onClick={handleBooking}
+                  className="flex-1 py-4 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all"
+                >
+                  Confirm Booking
+                </button>
                 <button 
                   onClick={handlePayment} 
                   disabled={isNotifying}
@@ -484,8 +531,10 @@ const App: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold opacity-40 uppercase">Transaction</p>
-                    <p className="text-[10px] font-mono">{bookingDetails.transactionId}</p>
+                    <p className="text-xs font-bold opacity-40 uppercase">Booking ID</p>
+                    <p className="text-[10px] font-mono">{bookingId || bookingDetails.transactionId}</p>
+                    <p className="mt-2 text-[10px] font-bold opacity-40 uppercase">Movie</p>
+                    <p className="text-[10px] font-mono">{selectedMovie.title}</p>
                   </div>
                 </div>
 
@@ -526,16 +575,20 @@ const App: React.FC = () => {
 
               <div className="p-10 text-center bg-white" ref={qrRef}>
                 <div className="bg-white p-4 inline-block border-2 border-black rounded-2xl mb-6 relative">
-                  <div className="w-48 h-48 bg-black rounded flex items-center justify-center p-2">
-                    <div className="grid grid-cols-5 gap-1 w-full h-full opacity-90">
-                      {Array.from({length: 25}).map((_, i) => (
-                        <div key={i} className={`rounded-[2px] ${Math.random() > 0.4 ? 'bg-white' : 'bg-transparent'}`}></div>
-                      ))}
+                  {qrImage ? (
+                    <img src={qrImage} alt="QR Code" className="h-48 w-48 object-contain" />
+                  ) : (
+                    <div className="w-48 h-48 bg-black rounded flex items-center justify-center p-2">
+                      <div className="grid grid-cols-5 gap-1 w-full h-full opacity-90">
+                        {Array.from({ length: 25 }).map((_, i) => (
+                          <div key={i} className={`rounded-[2px] ${Math.random() > 0.4 ? 'bg-white' : 'bg-transparent'}`}></div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {bookingDetails.paymentMethod === 'personal' && (
                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none">
-                      <span className="bg-red-600 text-white text-[8px] font-black uppercase px-2 py-1 rotate-12 shadow-lg">UNVERIFIED</span>
+                      <span className="bg-red-600 text-white text-[8px] font-black uppercase px-2 py-1 rotate-12 shadow-lg">...</span>
                     </div>
                   )}
                 </div>
