@@ -28,6 +28,16 @@
     "noEmit": true
   },
   "include": [
-    "src"
+    "src",
+    "components",
+    "services",
+    "*.ts",
+    "*.tsx",
+    "*.d.ts"
   ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "server"
+  ]
 }

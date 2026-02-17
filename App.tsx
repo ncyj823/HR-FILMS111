@@ -10,6 +10,7 @@ const App: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(BookingStep.MOVIE_INFO);
   const [selectedTime, setSelectedTime] = useState<string>(SHOW_TIMES[0]);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
+  const [bookedSeats, setBookedSeats] = useState<string[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
@@ -28,11 +29,10 @@ const App: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
+  const [personalContact, setPersonalContact] = useState<string>('');
 
   // Payment states
-  const [paymentMode, setPaymentMode] = useState<'card' | 'personal'>('card');
-  const [personalContact, setPersonalContact] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'gcash' | 'phonepe'>('gcash');
+  const [paymentChannel, setPaymentChannel] = useState<'gcash' | 'phonepe'>('gcash');
   const [gcashRefNo, setGcashRefNo] = useState('');
   const [phonepeUtrNo, setPhonepeUtrNo] = useState('');
   const [isNotifying, setIsNotifying] = useState(false);
@@ -40,7 +40,7 @@ const App: React.FC = () => {
 
   const getSeatPrice = (row: string) => {
     // GCash prices are in PHP, PhonePe prices are in INR
-    if (paymentMethod === 'gcash') {
+    if (paymentChannel === 'gcash') {
       // Conversion: 800 INR = 500 PHP, 950 INR = 650 PHP, 1100 INR = 700 PHP
       if (row === 'A' || row === 'B') return 500;
       if (row === 'C' || row === 'D') return 650;
@@ -72,6 +72,30 @@ const App: React.FC = () => {
     };
     fetchInsights();
   }, [selectedMovie.title]);
+
+  useEffect(() => {
+    const storedSeats = localStorage.getItem('hrfilm_bookedSeats');
+    if (storedSeats) {
+      try {
+        setBookedSeats(JSON.parse(storedSeats));
+      } catch (error) {
+        console.error('Error parsing booked seats:', error);
+      }
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'hrfilm_bookedSeats' && event.newValue) {
+        try {
+          setBookedSeats(JSON.parse(event.newValue));
+        } catch (error) {
+          console.error('Error syncing booked seats:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const handleBookingStart = () => {
     if (!currentUser) {
@@ -125,7 +149,7 @@ const App: React.FC = () => {
   };
 
   const toggleSeat = (seat: Seat) => {
-    if (seat.isBooked) return;
+    if (seat.isBooked || bookedSeats.includes(seat.id)) return;
 
     const isSelected = selectedSeats.find(s => s.id === seat.id);
 
@@ -181,9 +205,9 @@ const App: React.FC = () => {
   };
 
   const handleManualPayment = async () => {
-    const referenceNo = paymentMethod === 'gcash' ? gcashRefNo : phonepeUtrNo;
+    const referenceNo = paymentChannel === 'gcash' ? gcashRefNo : phonepeUtrNo;
     if (!referenceNo) {
-      alert(`Enter ${paymentMethod === 'gcash' ? 'GCash Reference Number' : 'PhonePe UTR Number'}`);
+      alert(`Enter ${paymentChannel === 'gcash' ? 'GCash Reference Number' : 'PhonePe UTR Number'}`);
       return;
     }
 
@@ -204,7 +228,7 @@ const App: React.FC = () => {
           phone: personalContact,
           seats: selectedSeats.map(seat => seat.id),
           movie: selectedMovie.title,
-          paymentMethod,
+          paymentMethod: paymentChannel,
           referenceNo
         })
       });
@@ -224,7 +248,7 @@ const App: React.FC = () => {
         setIsNotifying(false);
         setShowOwnerAlert(true);
         setTimeout(() => setShowOwnerAlert(false), 5000);
-        completeBooking();
+        completeBooking('personal');
       }, 1500);
     } catch (error) {
       console.error(error);
@@ -251,11 +275,11 @@ const App: React.FC = () => {
       setIsNotifying(false);
       setShowOwnerAlert(true);
       setTimeout(() => setShowOwnerAlert(false), 5000);
-      completeBooking();
+      completeBooking('card');
     }, 1500);
   };
 
-  const completeBooking = () => {
+  const completeBooking = (method: BookingDetails['paymentMethod']) => {
     const details: BookingDetails = {
       movieId: selectedMovie.id,
       selectedSeats,
@@ -263,11 +287,19 @@ const App: React.FC = () => {
       bookingDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
       showTime: selectedTime,
       transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-      paymentMethod: paymentMethod as any,
+      paymentMethod: method,
+      paymentChannel,
       contactInfo: personalContact
     };
     
     setBookingDetails(details);
+
+    const newlyBookedSeatIds = selectedSeats.map(seat => seat.id);
+    if (newlyBookedSeatIds.length > 0) {
+      const updatedSeatSet = Array.from(new Set([...bookedSeats, ...newlyBookedSeatIds]));
+      setBookedSeats(updatedSeatSet);
+      localStorage.setItem('hrfilm_bookedSeats', JSON.stringify(updatedSeatSet));
+    }
     
     // Save booking to user's account
     if (currentUser) {
@@ -494,14 +526,15 @@ const App: React.FC = () => {
                 const seats = SEATS_DATA;
 
                 const renderSeat = (seat: Seat) => {
+                  const isAlreadyBooked = seat.isBooked || bookedSeats.includes(seat.id);
                   const isSelected = selectedSeats.find(s => s.id === seat.id);
                   return (
                     <button
                       key={seat.id}
-                      disabled={seat.isBooked}
+                      disabled={isAlreadyBooked}
                       onClick={() => toggleSeat(seat)}
                       className={`w-8 h-8 rounded text-[9px] font-bold flex items-center justify-center transition-all ${
-                        seat.isBooked ? 'bg-neutral-800 text-neutral-700 cursor-not-allowed' :
+                        isAlreadyBooked ? 'bg-neutral-800 text-neutral-700 cursor-not-allowed' :
                         isSelected ? 'bg-red-600 text-white scale-110 shadow-[0_0_15px_rgba(220,38,38,0.6)]' :
                         'bg-white/10 border border-white/20 text-white/50 hover:bg-white/20 hover:border-white/40'
                       }`}
@@ -594,7 +627,7 @@ const App: React.FC = () => {
                 <div className="p-6 space-y-4">
                   <div className="pt-4 border-t border-white/10 flex justify-between items-center">
                     <span className="font-bold text-white">Total Pay</span>
-                    <span className="text-2xl font-oswald font-bold text-red-500">{paymentMethod === 'gcash' ? '₱' : '₹'}{totalAmount.toFixed(2)}</span>
+                    <span className="text-2xl font-oswald font-bold text-red-500">{paymentChannel === 'gcash' ? '₱' : '₹'}{totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -610,9 +643,9 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex gap-4 mb-6">
                   <button
-                    onClick={() => setPaymentMethod('gcash')}
+                    onClick={() => setPaymentChannel('gcash')}
                     className={`flex-1 px-6 py-3 rounded-xl border transition-all ${
-                      paymentMethod === 'gcash'
+                      paymentChannel === 'gcash'
                         ? "border-green-500 bg-green-500/10"
                         : "border-white/20"
                     }`}
@@ -620,9 +653,9 @@ const App: React.FC = () => {
                     GCash
                   </button>
                   <button
-                    onClick={() => setPaymentMethod('phonepe')}
+                    onClick={() => setPaymentChannel('phonepe')}
                     className={`flex-1 px-6 py-3 rounded-xl border transition-all ${
-                      paymentMethod === 'phonepe'
+                      paymentChannel === 'phonepe'
                         ? "border-blue-500 bg-blue-500/10"
                         : "border-white/20"
                     }`}
@@ -631,7 +664,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
                 
-                {paymentMethod === 'gcash' ? (
+                {paymentChannel === 'gcash' ? (
                   <div className="bg-white/5 p-4 rounded-xl mb-6">
                     <p className="text-sm mb-2">
                       Pay ₱{totalAmount} to GCash:
@@ -651,7 +684,7 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                {paymentMethod === 'gcash' ? (
+                {paymentChannel === 'gcash' ? (
                   <input
                     type="text"
                     placeholder="Enter GCash Reference Number"
@@ -788,7 +821,7 @@ const App: React.FC = () => {
                 <div className="border-t border-dashed border-gray-200 pt-6 flex justify-between items-center text-left">
                   <div>
                     <p className="text-[10px] uppercase text-gray-400 font-bold">Total Price</p>
-                    <p className="text-xl font-oswald font-bold">{bookingDetails.paymentMethod === 'gcash' ? '₱' : '₹'}{bookingDetails.totalAmount.toFixed(2)}</p>
+                    <p className="text-xl font-oswald font-bold">{bookingDetails.paymentChannel === 'gcash' ? '₱' : '₹'}{bookingDetails.totalAmount.toFixed(2)}</p>
                   </div>
                   <div className="flex gap-2">
                     <button 
