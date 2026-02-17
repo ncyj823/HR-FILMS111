@@ -51,7 +51,7 @@ app.post("/book", async (req, res) => {
     // Send email but don't wait for it or fail if it errors
     transporter.sendMail({
       from: process.env.SMTP_USER || "ncy1504@gmail.com",
-      to: "hriturajs33@gmail.com",
+      to: "imscoffialjfsm2025@gmail.com",
       subject: "New Movie Booking 🎬",
       html: `
         <h2>New Booking</h2>
