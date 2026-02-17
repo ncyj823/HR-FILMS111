@@ -44,5 +44,6 @@ export interface BookingDetails {
   showTime: string;
   transactionId: string;
   paymentMethod: 'card' | 'personal';
+  paymentChannel: 'gcash' | 'phonepe';
   contactInfo?: string;
 }

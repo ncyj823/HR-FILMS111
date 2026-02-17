@@ -5,6 +5,7 @@ import { BookingStep, Seat, BookingDetails, User } from './types';
 import { FEATURED_MOVIES, SHOW_TIMES, SEATS_DATA } from './constants';
 import { getMovieInsights } from './services/geminiService';
 import { SHOW_TIMES_DATA } from './constants';
+import BeautifulQR from './src/lib/qr';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(BookingStep.MOVIE_INFO);
@@ -15,7 +16,6 @@ const App: React.FC = () => {
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
   const [bookingId, setBookingId] = useState('');
-  const [qrImage, setQrImage] = useState('');
 
   const [selectedMovieId, setSelectedMovieId] = useState<string>(FEATURED_MOVIES[0].id);
   const selectedMovie = FEATURED_MOVIES.find(m => m.id === selectedMovieId) ?? FEATURED_MOVIES[0];
@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [phonepeUtrNo, setPhonepeUtrNo] = useState('');
   const [isNotifying, setIsNotifying] = useState(false);
   const [showOwnerAlert, setShowOwnerAlert] = useState(false);
+  const currencySymbol = paymentChannel === 'gcash' ? '₱' : '₹';
 
   const getSeatPrice = (row: string) => {
     // GCash prices are in PHP, PhonePe prices are in INR
@@ -194,7 +195,6 @@ const App: React.FC = () => {
       }
 
       setBookingId(data.bookingId);
-      setQrImage(data.qrImage);
       return true;
     } catch (error) {
       console.error(error);
@@ -241,7 +241,6 @@ const App: React.FC = () => {
       }
 
       setBookingId(data.bookingId);
-      setQrImage(data.qrImage);
       
       // Simulate owner notification delay
       setTimeout(() => {
@@ -592,7 +591,7 @@ const App: React.FC = () => {
                     <span key={s.id} className="text-white font-bold bg-white/10 px-2 py-1 rounded text-sm">{s.id}</span>
                   )) : <span className="text-gray-600 italic text-sm">No seats selected yet</span>}
                 </div>
-                <p className="text-2xl font-bold font-oswald">₹{totalAmount.toFixed(2)}</p>
+                <p className="text-2xl font-bold font-oswald">{currencySymbol}{totalAmount.toFixed(2)}</p>
               </div>
               <div className="flex gap-4">
                 <button onClick={() => setStep(BookingStep.MOVIE_INFO)} className="px-8 py-3 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all">Back</button>
@@ -627,7 +626,7 @@ const App: React.FC = () => {
                 <div className="p-6 space-y-4">
                   <div className="pt-4 border-t border-white/10 flex justify-between items-center">
                     <span className="font-bold text-white">Total Pay</span>
-                    <span className="text-2xl font-oswald font-bold text-red-500">{paymentChannel === 'gcash' ? '₱' : '₹'}{totalAmount.toFixed(2)}</span>
+                    <span className="text-2xl font-oswald font-bold text-red-500">{currencySymbol}{totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -667,7 +666,7 @@ const App: React.FC = () => {
                 {paymentChannel === 'gcash' ? (
                   <div className="bg-white/5 p-4 rounded-xl mb-6">
                     <p className="text-sm mb-2">
-                      Pay ₱{totalAmount} to GCash:
+                      Pay {currencySymbol}{totalAmount} to GCash:
                     </p>
                     <p className="text-lg font-bold">
                       09616899687
@@ -676,7 +675,7 @@ const App: React.FC = () => {
                 ) : (
                   <div className="bg-white/5 p-4 rounded-xl mb-6">
                     <p className="text-sm mb-2">
-                      Pay ₹{totalAmount} to PhonePe:
+                      Pay {currencySymbol}{totalAmount} to PhonePe:
                     </p>
                     <p className="text-lg font-bold">
                       +918160744501
@@ -800,17 +799,7 @@ const App: React.FC = () => {
 
               <div className="p-10 text-center bg-white" ref={qrRef}>
                 <div className="bg-white p-4 inline-block border-2 border-black rounded-2xl mb-6 relative">
-                  {qrImage ? (
-                    <img src={qrImage} alt="QR Code" className="h-48 w-48 object-contain" />
-                  ) : (
-                    <div className="w-48 h-48 bg-black rounded flex items-center justify-center p-2">
-                      <div className="grid grid-cols-5 gap-1 w-full h-full opacity-90">
-                        {Array.from({ length: 25 }).map((_, i) => (
-                          <div key={i} className={`rounded-[2px] ${Math.random() > 0.4 ? 'bg-white' : 'bg-transparent'}`}></div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <BeautifulQR value={bookingId || bookingDetails.transactionId} />
                   {bookingDetails.paymentMethod === 'personal' && (
                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none">
                       <span className="bg-red-600 text-white text-[8px] font-black uppercase px-2 py-1 rotate-12 shadow-lg">...</span>
