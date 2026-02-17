@@ -2,6 +2,12 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 const QRCode = require("qrcode");
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 const app = express();
 
