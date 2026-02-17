@@ -4,6 +4,8 @@ const cors = require("cors");
 const QRCode = require("qrcode");
 const { createClient } = require('@supabase/supabase-js');
 
+require('dotenv').config(); // ← must be the FIRST line
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -13,7 +15,7 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  origin: ['http://localhost:5173', 'http://localhost:5000', 'http://127.0.0.1:5173','http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
@@ -79,8 +81,7 @@ app.post("/book", async (req, res) => {
   } catch (error) {
     console.error("Booking error:", error);
     res.status(500).json({
-      error: "Booking failed",
-      details: error.message
+      error: "Booking failed"
     });
   }
 });
