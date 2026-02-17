@@ -174,7 +174,7 @@ const App: React.FC = () => {
 
   const handleBooking = async () => {
     try {
-      const response = await fetch('http://localhost:5000/book', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/book`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -218,7 +218,7 @@ const App: React.FC = () => {
 
     try {
       setIsNotifying(true);
-      const response = await fetch('http://localhost:5000/book', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/book`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
