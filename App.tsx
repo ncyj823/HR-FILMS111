@@ -4,6 +4,7 @@ import AuthModal from './components/AuthModal';
 import { BookingStep, Seat, BookingDetails, User } from './types';
 import { FEATURED_MOVIES, SHOW_TIMES, SEATS_DATA } from './constants';
 import { getMovieInsights } from './services/geminiService';
+import { SHOW_TIMES_DATA } from './constants';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(BookingStep.MOVIE_INFO);
@@ -31,18 +32,40 @@ const App: React.FC = () => {
   // Payment states
   const [paymentMode, setPaymentMode] = useState<'card' | 'personal'>('card');
   const [personalContact, setPersonalContact] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('GCash');
-  const [referenceNo, setReferenceNo] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'gcash' | 'phonepe'>('gcash');
+  const [gcashRefNo, setGcashRefNo] = useState('');
+  const [phonepeUtrNo, setPhonepeUtrNo] = useState('');
   const [isNotifying, setIsNotifying] = useState(false);
   const [showOwnerAlert, setShowOwnerAlert] = useState(false);
 
   const getSeatPrice = (row: string) => {
-    if (row === 'A' || row === 'B') return 800;
-    if (row === 'C' || row === 'D') return 950;
-    return 1100; // E to L
+    // GCash prices are in PHP, PhonePe prices are in INR
+    if (paymentMethod === 'gcash') {
+      // Conversion: 800 INR = 500 PHP, 950 INR = 650 PHP, 1100 INR = 700 PHP
+      if (row === 'A' || row === 'B') return 500;
+      if (row === 'C' || row === 'D') return 650;
+      return 700; // E to L
+    } else {
+      // PhonePe prices in INR
+      if (row === 'A' || row === 'B') return 800;
+      if (row === 'C' || row === 'D') return 950;
+      return 1100; // E to L
+    }
   };
 
   useEffect(() => {
+    // Load user data from localStorage on app load
+    const storedUser = localStorage.getItem('hrfilm_currentUser');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    }
+    
+    // Fetch movie insights
     const fetchInsights = async () => {
       const data = await getMovieInsights(selectedMovie.title);
       setInsights(data);
@@ -61,6 +84,16 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
+    
+    // Load user's booking history from account
+    const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
+    const userAccount = accounts.find((acc: any) => acc.email === user.email);
+    
+    if (userAccount && userAccount.bookingHistory && userAccount.bookingHistory.length > 0) {
+      // User has previous bookings - you can display them as needed
+      console.log('User has booking history:', userAccount.bookingHistory);
+    }
+    
     if (pendingStepChange) {
       setStep(pendingStepChange);
       setPendingStepChange(null);
@@ -68,6 +101,24 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Save current booking details to user's account history before logout
+    if (currentUser && bookingDetails) {
+      const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
+      const userIndex = accounts.findIndex((acc: any) => acc.email === currentUser.email);
+      
+      if (userIndex !== -1) {
+        if (!accounts[userIndex].bookingHistory) {
+          accounts[userIndex].bookingHistory = [];
+        }
+        accounts[userIndex].bookingHistory.push({
+          ...bookingDetails,
+          bookingDate: new Date().toISOString()
+        });
+        localStorage.setItem('hrfilm_accounts', JSON.stringify(accounts));
+      }
+    }
+    
+    localStorage.removeItem('hrfilm_currentUser');
     setCurrentUser(null);
     setStep(BookingStep.MOVIE_INFO);
     setSelectedSeats([]);
@@ -91,7 +142,10 @@ const App: React.FC = () => {
     }
   };
 
-  const totalAmount = selectedSeats.reduce((acc, seat) => acc + seat.price, 0);
+  const totalAmount = selectedSeats.reduce((acc, seat) => {
+    const currentPrice = getSeatPrice(seat.row);
+    return acc + currentPrice;
+  }, 0);
 
   const handleBooking = async () => {
     try {
@@ -127,12 +181,19 @@ const App: React.FC = () => {
   };
 
   const handleManualPayment = async () => {
+    const referenceNo = paymentMethod === 'gcash' ? gcashRefNo : phonepeUtrNo;
     if (!referenceNo) {
-      alert('Enter payment reference number');
+      alert(`Enter ${paymentMethod === 'gcash' ? 'GCash Reference Number' : 'PhonePe UTR Number'}`);
+      return;
+    }
+
+    if (!personalContact) {
+      alert("Please provide your contact info so the owner can reach you.");
       return;
     }
 
     try {
+      setIsNotifying(true);
       const response = await fetch('http://localhost:5000/book', {
         method: 'POST',
         headers: {
@@ -157,9 +218,17 @@ const App: React.FC = () => {
 
       setBookingId(data.bookingId);
       setQrImage(data.qrImage);
-      setStep(BookingStep.TICKET);
+      
+      // Simulate owner notification delay
+      setTimeout(() => {
+        setIsNotifying(false);
+        setShowOwnerAlert(true);
+        setTimeout(() => setShowOwnerAlert(false), 5000);
+        completeBooking();
+      }, 1500);
     } catch (error) {
       console.error(error);
+      setIsNotifying(false);
       const message = error instanceof Error ? error.message : 'Booking failed';
       alert(message);
     }
@@ -194,10 +263,30 @@ const App: React.FC = () => {
       bookingDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
       showTime: selectedTime,
       transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-      paymentMethod: 'personal',
+      paymentMethod: paymentMethod as any,
       contactInfo: personalContact
     };
+    
     setBookingDetails(details);
+    
+    // Save booking to user's account
+    if (currentUser) {
+      const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
+      const userIndex = accounts.findIndex((acc: any) => acc.email === currentUser.email);
+      
+      if (userIndex !== -1) {
+        if (!accounts[userIndex].bookingHistory) {
+          accounts[userIndex].bookingHistory = [];
+        }
+        accounts[userIndex].bookingHistory.push({
+          ...details,
+          bookingId: bookingId,
+          bookingDateTime: new Date().toISOString()
+        });
+        localStorage.setItem('hrfilm_accounts', JSON.stringify(accounts));
+      }
+    }
+    
     setStep(BookingStep.TICKET);
   };
 
@@ -362,15 +451,16 @@ const App: React.FC = () => {
               <div className="mb-10">
                 <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">Select Show Time</h3>
                 <div className="flex flex-wrap gap-3">
-                  {SHOW_TIMES.map(time => (
+                  {SHOW_TIMES_DATA.map(showTime => (
                     <button 
-                      key={time}
-                      onClick={() => setSelectedTime(time)}
-                      className={`px-5 py-2 rounded-lg text-sm font-bold transition-all border ${
-                        selectedTime === time ? 'bg-white text-black border-white' : 'bg-transparent text-white border-white/20 hover:border-white'
+                      key={showTime.time}
+                      onClick={() => setSelectedTime(showTime.time)}
+                      className={`px-5 py-3 rounded-lg text-sm font-bold transition-all border flex flex-col items-start ${
+                        selectedTime === showTime.time ? 'bg-red-600 text-white border-red-600' : 'bg-transparent text-white border-white/20 hover:border-white'
                       }`}
                     >
-                      {time}
+                      <span>{showTime.time}</span>
+                      <span className="text-[10px] font-bold opacity-75">{showTime.location}</span>
                     </button>
                   ))}
                 </div>
@@ -498,21 +588,13 @@ const App: React.FC = () => {
                   <div>
                     <h4 className="font-bold text-lg mb-1">{selectedMovie.title}</h4>
                     <p className="text-xs text-gray-500 mb-2">{selectedTime} • {selectedMovie.duration}</p>
-                    <p className="text-xs text-gray-500 italic">HR Cinema • Hall 4</p>
+                    <p className="text-xs text-gray-500 italic">HR Cinema • Vista mall Laspinas </p>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Tickets ({selectedSeats.length})</span>
-                    <span className="text-white font-bold">${totalAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Service Fee</span>
-                    <span className="text-white font-bold">$2.50</span>
-                  </div>
                   <div className="pt-4 border-t border-white/10 flex justify-between items-center">
                     <span className="font-bold text-white">Total Pay</span>
-                    <span className="text-2xl font-oswald font-bold text-red-500">${(totalAmount + 2.5).toFixed(2)}</span>
+                    <span className="text-2xl font-oswald font-bold text-red-500">{paymentMethod === 'gcash' ? '₱' : '₹'}{totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -527,35 +609,65 @@ const App: React.FC = () => {
                   <p className="text-[11px] text-gray-400">The owner will be notified to collect payment personally. Please provide your contact info below.</p>
                 </div>
                 <div className="flex gap-4 mb-6">
-                  {["GCash", "BDO", "BPI"].map(method => (
-                    <button
-                      key={method}
-                      onClick={() => setPaymentMethod(method)}
-                      className={`px-6 py-3 rounded-xl border transition-all ${
-                        paymentMethod === method
-                          ? "border-blue-500 bg-blue-500/10"
-                          : "border-white/20"
-                      }`}
-                    >
-                      {method}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => setPaymentMethod('gcash')}
+                    className={`flex-1 px-6 py-3 rounded-xl border transition-all ${
+                      paymentMethod === 'gcash'
+                        ? "border-green-500 bg-green-500/10"
+                        : "border-white/20"
+                    }`}
+                  >
+                    GCash
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('phonepe')}
+                    className={`flex-1 px-6 py-3 rounded-xl border transition-all ${
+                      paymentMethod === 'phonepe'
+                        ? "border-blue-500 bg-blue-500/10"
+                        : "border-white/20"
+                    }`}
+                  >
+                    PhonePe
+                  </button>
                 </div>
-                <div className="bg-white/5 p-4 rounded-xl mb-6">
-                  <p className="text-sm">
-                    Pay ₹{totalAmount} to {paymentMethod}:
-                  </p>
-                  <p className="text-lg font-bold">
-                    09158222220
-                  </p>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Enter Reference Number"
-                  value={referenceNo}
-                  onChange={(e) => setReferenceNo(e.target.value)}
-                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 mb-6"
-                />
+                
+                {paymentMethod === 'gcash' ? (
+                  <div className="bg-white/5 p-4 rounded-xl mb-6">
+                    <p className="text-sm mb-2">
+                      Pay ₱{totalAmount} to GCash:
+                    </p>
+                    <p className="text-lg font-bold">
+                      09616899687
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white/5 p-4 rounded-xl mb-6">
+                    <p className="text-sm mb-2">
+                      Pay ₹{totalAmount} to PhonePe:
+                    </p>
+                    <p className="text-lg font-bold">
+                      +918160744501
+                    </p>
+                  </div>
+                )}
+
+                {paymentMethod === 'gcash' ? (
+                  <input
+                    type="text"
+                    placeholder="Enter GCash Reference Number"
+                    value={gcashRefNo}
+                    onChange={(e) => setGcashRefNo(e.target.value)}
+                    className="w-full p-4 rounded-xl bg-white/5 border border-white/10 mb-6"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="Enter PhonePe UTR Number"
+                    value={phonepeUtrNo}
+                    onChange={(e) => setPhonepeUtrNo(e.target.value)}
+                    className="w-full p-4 rounded-xl bg-white/5 border border-white/10 mb-6"
+                  />
+                )}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Contact Phone or Email</label>
                   <input 
@@ -571,21 +683,15 @@ const App: React.FC = () => {
               <div className="flex gap-4 pt-8">
                 <button onClick={() => setStep(BookingStep.SEAT_SELECTION)} className="flex-1 py-4 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all">Back</button>
                 <button
-                  onClick={handleBooking}
-                  className="flex-1 py-4 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all"
-                >
-                  Confirm Booking
-                </button>
-                <button 
-                  onClick={handlePayment} 
+                  onClick={handleManualPayment}
                   disabled={isNotifying}
                   className="flex-[2] py-4 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-all glow-red disabled:opacity-50"
                 >
                   {isNotifying ? (
                     <span className="flex items-center justify-center gap-2">
-                      <i className="fas fa-circle-notch animate-spin"></i> Alerting Owner...
+                      <i className="fas fa-circle-notch animate-spin"></i> Processing...
                     </span>
-                  ) : 'Notify Owner & Book'}
+                  ) : 'Submit Payment'}
                 </button>
               </div>
             </div>
@@ -682,7 +788,7 @@ const App: React.FC = () => {
                 <div className="border-t border-dashed border-gray-200 pt-6 flex justify-between items-center text-left">
                   <div>
                     <p className="text-[10px] uppercase text-gray-400 font-bold">Total Price</p>
-                    <p className="text-xl font-oswald font-bold">${bookingDetails.totalAmount.toFixed(2)}</p>
+                    <p className="text-xl font-oswald font-bold">{bookingDetails.paymentMethod === 'gcash' ? '₱' : '₹'}{bookingDetails.totalAmount.toFixed(2)}</p>
                   </div>
                   <div className="flex gap-2">
                     <button 

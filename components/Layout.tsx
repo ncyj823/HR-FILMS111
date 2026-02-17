@@ -23,8 +23,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onAuthClick, onLogout }
         </div>
         <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-400">
           <a href="#" className="hover:text-white transition-colors">Movies</a>
-          <a href="#" className="hover:text-white transition-colors">Theaters</a>
-          <a href="#" className="hover:text-white transition-colors">Offers</a>
         </nav>
         
         <div className="relative">
@@ -78,41 +76,16 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onAuthClick, onLogout }
       </main>
 
       <footer className="py-12 px-6 bg-black border-t border-white/5">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center font-bold text-lg glow-red">
-                HR
-              </div>
-              <span className="text-lg font-bold tracking-tighter">FILM.COM</span>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center font-bold text-lg glow-red">
+              HR
             </div>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Experience the future of cinema booking. Premium seats, exclusive premieres, and seamless digital ticketing.
-            </p>
+            <span className="text-lg font-bold tracking-tighter">FILM.COM</span>
           </div>
-          <div>
-            <h4 className="font-bold text-white mb-6 uppercase tracking-widest text-xs">Explore</h4>
-            <ul className="space-y-4 text-sm text-gray-500">
-              <li><a href="#" className="hover:text-white">Now Playing</a></li>
-              <li><a href="#" className="hover:text-white">Coming Soon</a></li>
-              <li><a href="#" className="hover:text-white">IMAX Experience</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-white mb-6 uppercase tracking-widest text-xs">Support</h4>
-            <ul className="space-y-4 text-sm text-gray-500">
-              <li><a href="#" className="hover:text-white">Help Center</a></li>
-              <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-white mb-6 uppercase tracking-widest text-xs">Newsletter</h4>
-            <div className="flex">
-              <input type="email" placeholder="Email" className="bg-white/5 border border-white/10 px-4 py-2 rounded-l-lg focus:outline-none w-full text-sm" />
-              <button className="bg-red-600 px-4 py-2 rounded-r-lg font-bold text-sm">Join</button>
-            </div>
-          </div>
+          <p className="text-gray-500 text-sm leading-relaxed max-w-md">
+            Experience the future of cinema booking. Premium seats, exclusive premieres, and seamless digital ticketing.
+          </p>
         </div>
         <div className="mt-12 pt-8 border-t border-white/5 text-center text-gray-600 text-xs">
           © {new Date().getFullYear()} HRFILM.COM. All rights reserved. Built for cinema lovers.

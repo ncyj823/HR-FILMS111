@@ -33,7 +33,11 @@ export const FEATURED_MOVIES: Movie[] = [
 
 export const FEATURED_MOVIE: Movie = FEATURED_MOVIES[0];
 
-export const SHOW_TIMES = [  '08:00 PM'];
+export const SHOW_TIMES_DATA = [
+  { time: '08:00 PM', location: 'Vista mall Laspinas' }
+];
+
+export const SHOW_TIMES = SHOW_TIMES_DATA.map(st => st.time);
 
 export const generateSeats = (): Seat[] => {
   const seats: Seat[] = [];
