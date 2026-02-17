@@ -15,7 +15,7 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5000', 'http://127.0.0.1:5173','http://localhost:3000'],
+  origin: ['http://localhost:3000', 'https://hr-films-111.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
