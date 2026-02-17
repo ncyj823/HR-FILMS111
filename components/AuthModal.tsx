@@ -51,11 +51,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
       if (!isLogin) {
         // Sign up - create new account
         const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
+        const trimmedEmail = formData.email.trim().toLowerCase();
         
         // Check if email already exists
-        const emailExists = accounts.some((acc: any) => acc.email === formData.email);
+        const emailExists = accounts.some((acc: any) => acc.email.toLowerCase() === trimmedEmail);
         if (emailExists) {
           setError('Email already registered. Please sign in instead.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate form data
+        if (!formData.name.trim() || !trimmedEmail) {
+          setError('Please fill in all fields.');
           setIsLoading(false);
           return;
         }
@@ -66,13 +74,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         // Store account data
         const newAccount = {
           id: Math.random().toString(36).substr(2, 9),
-          name: formData.name,
-          email: formData.email,
-          password: newPassword
+          name: formData.name.trim(),
+          email: trimmedEmail,
+          password: newPassword,
+          bookingHistory: []
         };
         
         accounts.push(newAccount);
         localStorage.setItem('hrfilm_accounts', JSON.stringify(accounts));
+        console.log('Account created:', newAccount);
         
         setGeneratedPassword(newPassword);
         setPasswordShown(true);
@@ -82,7 +92,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
       // Sign in - validate credentials
       const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
-      const account = accounts.find((acc: any) => acc.email === formData.email);
+      const trimmedEmail = formData.email.trim().toLowerCase();
+      const trimmedPassword = formData.password.trim();
+      
+      console.log('Sign in attempt with email:', trimmedEmail);
+      console.log('Stored accounts:', accounts);
+      
+      const account = accounts.find((acc: any) => acc.email.toLowerCase() === trimmedEmail);
 
       if (!account) {
         setError('Email not found. Please create an account first.');
@@ -90,7 +106,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         return;
       }
 
-      if (account.password !== formData.password) {
+      if (account.password !== trimmedPassword) {
         setError('Incorrect password. Please try again.');
         setIsLoading(false);
         return;
@@ -114,7 +130,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
   const handleCompleteSignup = () => {
     const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
-    const newAccount = accounts.find((acc: any) => acc.email === formData.email);
+    const trimmedEmail = formData.email.trim().toLowerCase();
+    const newAccount = accounts.find((acc: any) => acc.email.toLowerCase() === trimmedEmail);
 
     if (newAccount) {
       const user: User = {
@@ -123,11 +140,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         email: newAccount.email
       };
       
+      console.log('Signup completed for user:', user);
+      
       // Store current user in localStorage
       localStorage.setItem('hrfilm_currentUser', JSON.stringify(user));
       
+      // Reset form
+      setFormData({ name: '', email: '', password: '' });
+      setGeneratedPassword('');
+      setPasswordShown(false);
+      
       onLogin(user);
       onClose();
+    } else {
+      setError('Account creation failed. Please try again.');
     }
   };
 
@@ -253,6 +279,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                       setPasswordShown(false);
                       setError('');
                       setFormData({ name: '', email: '', password: '' });
+                      setIsLoading(false);
                     }}
                     className="ml-2 text-white font-bold hover:text-red-500 transition-colors"
                   >
