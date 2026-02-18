@@ -19,6 +19,11 @@ const App: React.FC = () => {
 
   const [selectedMovieId, setSelectedMovieId] = useState<string>(FEATURED_MOVIES[0].id);
   const selectedMovie = FEATURED_MOVIES.find(m => m.id === selectedMovieId) ?? FEATURED_MOVIES[0];
+  const selectedShowDetails = SHOW_TIMES_DATA.find(show => show.time === selectedTime) ?? SHOW_TIMES_DATA[0];
+  const showTimeValue = selectedShowDetails?.time ?? selectedTime;
+  const showScheduleLabel = selectedShowDetails?.date
+    ? `${selectedShowDetails.date} • ${showTimeValue}`
+    : `${selectedMovie.releaseDate} • ${showTimeValue}`;
 
   // Auth state
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -284,7 +289,7 @@ const App: React.FC = () => {
       movieId: selectedMovie.id,
       selectedSeats,
       totalAmount,
-      bookingDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      bookingDate: showScheduleLabel,
       showTime: selectedTime,
       transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       paymentMethod: method,
@@ -492,7 +497,10 @@ const App: React.FC = () => {
                       }`}
                     >
                       <span>{showTime.time}</span>
-                      <span className="text-[10px] font-bold opacity-75">{showTime.location}</span>
+                        {showTime.date && (
+                          <span className="text-[10px] font-semibold opacity-80">{showTime.date}</span>
+                        )}
+                        <span className="text-[10px] font-bold opacity-75">{showTime.location}</span>
                     </button>
                   ))}
                 </div>
@@ -620,7 +628,7 @@ const App: React.FC = () => {
                   <img src={selectedMovie.posterUrl} className="w-20 h-28 object-cover rounded-lg border-2 border-red-600" alt="" />
                   <div>
                     <h4 className="font-bold text-lg mb-1">{selectedMovie.title}</h4>
-                    <p className="text-xs text-gray-500 mb-2">{selectedTime} • {selectedMovie.duration}</p>
+                    <p className="text-xs text-gray-500 mb-2">{showScheduleLabel} • {selectedMovie.duration}</p>
                     <p className="text-xs text-gray-500 italic">HR Cinema • Vista mall Laspinas </p>
                   </div>
                 </div>

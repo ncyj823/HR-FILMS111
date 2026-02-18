@@ -34,9 +34,9 @@ app.get("/test", (req, res) => {
 });
 
 app.post("/book", async (req, res) => {
-  const { name, phone, seats, movie, paymentMethod, referenceNo } = req.body;
+  const { name, phone, email, seats, movie, paymentMethod, referenceNo } = req.body;
 
-  console.log("Booking request received:", { name, phone,email, seats, movie, paymentMethod, referenceNo });
+  console.log("Booking request received:", { name, phone, email, seats, movie, paymentMethod, referenceNo });
 
   try {
     const bookingId = "TKT" + Math.floor(100000 + Math.random() * 900000);

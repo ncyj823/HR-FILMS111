@@ -27,6 +27,12 @@ export interface Movie {
   releaseDate: string;
 }
 
+export interface ShowTimeSlot {
+  time: string;
+  location: string;
+  date?: string;
+}
+
 export interface Seat {
   id: string;
   row: string;
