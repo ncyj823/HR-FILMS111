@@ -594,8 +594,8 @@ const App: React.FC = () => {
             </div>
 
             {/* Seating Layout */}
-            <div className="overflow-x-auto -mx-6 px-6 mb-12">
-              <div className="seating-wrapper min-w-[680px] mx-auto">
+            <div className="seating-wrapper mb-12 overflow-x-auto pb-4">
+              <div className="min-w-max mx-auto px-6">
                 {(() => {
                 const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
                 const seats = SEATS_DATA;
