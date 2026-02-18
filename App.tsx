@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from './components/Layout';
 import AuthModal from './components/AuthModal';
 import { BookingStep, Seat, BookingDetails, User } from './types';
@@ -6,12 +6,14 @@ import { FEATURED_MOVIES, SHOW_TIMES, SEATS_DATA } from './constants';
 import { getMovieInsights } from './services/geminiService';
 import { SHOW_TIMES_DATA } from './constants';
 import BeautifulQR from './src/lib/qr';
+import { supabase } from './src/supabaseClient';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(BookingStep.MOVIE_INFO);
   const [selectedTime, setSelectedTime] = useState<string>(SHOW_TIMES[0]);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [bookedSeats, setBookedSeats] = useState<string[]>([]);
+  const [lockedSeats, setLockedSeats] = useState<string[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
@@ -44,6 +46,22 @@ const App: React.FC = () => {
   const [showOwnerAlert, setShowOwnerAlert] = useState(false);
   const currencySymbol = paymentChannel === 'gcash' ? '₱' : '₹';
 
+  const fetchLockedSeats = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('seat_locks')
+      .select('seat_id')
+      .eq('movie', selectedMovie.title)
+      .eq('show_time', selectedTime)
+      .gt('expires_at', new Date().toISOString());
+
+    if (error) {
+      console.error('Error fetching locked seats:', error);
+      return;
+    }
+
+    setLockedSeats(data?.map(entry => entry.seat_id) || []);
+  }, [selectedMovie.title, selectedTime]);
+
   const getSeatPrice = (row: string) => {
     // GCash prices are in PHP, PhonePe prices are in INR
     if (paymentChannel === 'gcash') {
@@ -56,6 +74,33 @@ const App: React.FC = () => {
       if (row === 'A' || row === 'B') return 800;
       if (row === 'C' || row === 'D') return 950;
       return 1100; // E to L
+    }
+  };
+
+  const lockSeat = async (seatId: string) => {
+    try {
+      await supabase.from('seat_locks').upsert({
+        seat_id: seatId,
+        movie: selectedMovie.title,
+        show_time: selectedTime,
+        locked_by: currentUser?.email || 'guest',
+        locked_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      });
+    } catch (error) {
+      console.error('Error locking seat:', error);
+    }
+  };
+
+  const unlockSeat = async (seatId: string) => {
+    try {
+      await supabase
+        .from('seat_locks')
+        .delete()
+        .eq('seat_id', seatId)
+        .eq('locked_by', currentUser?.email || 'guest');
+    } catch (error) {
+      console.error('Error unlocking seat:', error);
     }
   };
 
@@ -102,6 +147,23 @@ const App: React.FC = () => {
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
+
+  useEffect(() => {
+    fetchLockedSeats();
+
+    const channel = supabase
+      .channel(`seat_locks_${selectedMovie.id}_${selectedTime}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'seat_locks' },
+        () => fetchLockedSeats()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedMovie.id, selectedTime, fetchLockedSeats]);
 
   const handleBookingStart = () => {
     if (!currentUser) {
@@ -154,21 +216,25 @@ const App: React.FC = () => {
     setSelectedSeats([]);
   };
 
-  const toggleSeat = (seat: Seat) => {
-    if (seat.isBooked || bookedSeats.includes(seat.id)) return;
+  const toggleSeat = async (seat: Seat) => {
+    const isSelected = selectedSeats.some(s => s.id === seat.id);
+    const isBookedSeat = seat.isBooked || bookedSeats.includes(seat.id);
+    const isLockedByOther = lockedSeats.includes(seat.id) && !isSelected;
 
-    const isSelected = selectedSeats.find(s => s.id === seat.id);
+    if (isBookedSeat || isLockedByOther) return;
 
     if (isSelected) {
-      setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+      setSelectedSeats(prev => prev.filter(s => s.id !== seat.id));
+      await unlockSeat(seat.id);
     } else {
-      setSelectedSeats([
-        ...selectedSeats,
+      setSelectedSeats(prev => ([
+        ...prev,
         {
           ...seat,
           price: getSeatPrice(seat.row)
         }
-      ]);
+      ]));
+      await lockSeat(seat.id);
     }
   };
 
@@ -535,14 +601,17 @@ const App: React.FC = () => {
 
                 const renderSeat = (seat: Seat) => {
                   const isAlreadyBooked = seat.isBooked || bookedSeats.includes(seat.id);
-                  const isSelected = selectedSeats.find(s => s.id === seat.id);
+                  const isSelected = selectedSeats.some(s => s.id === seat.id);
+                  const isLocked = lockedSeats.includes(seat.id);
+                  const isLockedByOther = isLocked && !isSelected;
                   return (
                     <button
                       key={seat.id}
-                      disabled={isAlreadyBooked}
+                      disabled={isAlreadyBooked || isLockedByOther}
                       onClick={() => toggleSeat(seat)}
                       className={`w-8 h-8 rounded text-[9px] font-bold flex items-center justify-center transition-all ${
                         isAlreadyBooked ? 'bg-neutral-800 text-neutral-700 cursor-not-allowed' :
+                        isLockedByOther ? 'bg-orange-500 text-white cursor-not-allowed' :
                         isSelected ? 'bg-red-600 text-white scale-110 shadow-[0_0_15px_rgba(220,38,38,0.6)]' :
                         'bg-white/10 border border-white/20 text-white/50 hover:bg-white/20 hover:border-white/40'
                       }`}
