@@ -10,7 +10,7 @@ export const FEATURED_MOVIES: Movie[] = [
     description: 'Hamza Ali Mazari continues his relentless pursuit to topple the Pakistani crime system, eyeing the shifty Major Iqbal. As his journey unfolds, so does his transformative history.',
     director: 'Aditya Dhar',
     cast: ['Ranveer Singh', 'Sara Arjun', 'Arjun Rampal','Sanjay Dutt','R. Madhavan','Rakesh Bedi'],
-    posterUrl: 'dist\assets\posters\dhurandhar2.jpg.webp',
+    posterUrl: 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/photo_2026-02-18_14-12-04.jpg',
     backdropUrl: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=2000&auto=format&fit=crop',
     trailerId: 'grY3uX1Yj8U',
     releaseDate: 'March 19, 2026'
