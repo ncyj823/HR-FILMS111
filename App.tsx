@@ -225,6 +225,7 @@ const App: React.FC = () => {
         },
         body: JSON.stringify({
           name: currentUser?.name || 'Guest',
+          email: currentUser?.email || '',
           phone: personalContact,
           seats: selectedSeats.map(seat => seat.id),
           movie: selectedMovie.title,
