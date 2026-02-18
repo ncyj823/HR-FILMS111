@@ -355,7 +355,7 @@ const App: React.FC = () => {
       movieId: selectedMovie.id,
       selectedSeats,
       totalAmount,
-      bookingDate: showScheduleLabel,
+      bookingDate: selectedMovie.releaseDate,
       showTime: selectedTime,
       transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       paymentMethod: method,
