@@ -594,8 +594,9 @@ const App: React.FC = () => {
             </div>
 
             {/* Seating Layout */}
-            <div className="seating-wrapper mb-12">
-              {(() => {
+            <div className="overflow-x-auto -mx-6 px-6 mb-12">
+              <div className="seating-wrapper min-w-[680px] mx-auto">
+                {(() => {
                 const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
                 const seats = SEATS_DATA;
 
@@ -622,7 +623,7 @@ const App: React.FC = () => {
                 };
 
                 return (
-                  <div className="seating-container space-y-3">
+                  <div className="seating-container space-y-3 min-w-[680px]">
                     {rows.map((row) => {
                       const rowSeats = seats.filter(seat => seat.row === row);
                       const left = rowSeats.filter(seat => seat.number <= 6);
@@ -630,19 +631,19 @@ const App: React.FC = () => {
                       const right = rowSeats.filter(seat => seat.number >= 19);
 
                       return (
-                        <div key={row} className="flex items-center justify-center gap-8">
+                        <div key={row} className="flex items-center justify-center gap-4 md:gap-8">
                           {/* Left Block */}
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 md:gap-2">
                             {left.map(seat => renderSeat(seat))}
                           </div>
 
                           {/* Center Block */}
-                          <div className="flex gap-2 px-4">
+                          <div className="flex gap-1 md:gap-2 px-2 md:px-4">
                             {center.map(seat => renderSeat(seat))}
                           </div>
 
                           {/* Right Block */}
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 md:gap-2">
                             {right.map(seat => renderSeat(seat))}
                           </div>
                         </div>
@@ -650,7 +651,8 @@ const App: React.FC = () => {
                     })}
                   </div>
                 );
-              })()}
+                })()}
+              </div>
             </div>
 
             {/* Legend */}
