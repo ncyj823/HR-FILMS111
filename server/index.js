@@ -4,7 +4,7 @@ const cors = require("cors");
 const QRCode = require("qrcode");
 const { createClient } = require('@supabase/supabase-js');
 
-require('dotenv').config(); // ← must be the FIRST line
+require('dotenv').config();
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -15,7 +15,12 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://hr-films-111.vercel.app'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://hr-films-111.vercel.app',
+    /\.vercel\.app$/
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
@@ -33,45 +38,73 @@ app.get("/test", (req, res) => {
   res.json({ status: "Backend connected successfully" });
 });
 
+// Keep-alive ping to prevent Render cold starts
+app.get("/ping", (req, res) => {
+  res.json({ pong: true, timestamp: new Date() });
+});
+
 app.post("/book", async (req, res) => {
   const { name, phone, email, seats, movie, paymentMethod, referenceNo } = req.body;
 
   console.log("Booking request received:", { name, phone, email, seats, movie, paymentMethod, referenceNo });
 
+  if (!seats || seats.length === 0) {
+    return res.status(400).json({ error: "No seats selected" });
+  }
+  if (!movie) {
+    return res.status(400).json({ error: "Movie is required" });
+  }
+
   try {
     const bookingId = "TKT" + Math.floor(100000 + Math.random() * 900000);
+    const qrImage = await QRCode.toDataURL(bookingId);
 
-    const qrData = bookingId;
-    const qrImage = await QRCode.toDataURL(qrData);
+    const { error: dbError } = await supabase
+      .from('bookings')
+      .insert({
+        booking_id: bookingId,
+        name,
+        phone: phone || '',
+        email: email || '',
+        seats,
+        movie,
+        payment_method: paymentMethod || 'personal',
+        reference_no: referenceNo || '',
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
 
-    // Send email notification (non-blocking)
+    if (dbError) {
+      console.error("DB insert error:", dbError);
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "ncy1504@gmail.com",
-        pass: "tdllgdfagbboqinb"
+        user: process.env.SMTP_USER || "ncy1504@gmail.com",
+        pass: process.env.GMAIL_APP_PASSWORD || "tdllgdfagbboqinb"
       },
       tls: {
         rejectUnauthorized: false
       }
     });
 
-    // Send email but don't wait for it or fail if it errors
     transporter.sendMail({
       from: process.env.SMTP_USER || "ncy1504@gmail.com",
       to: "imscoffialjfsm2025@gmail.com",
-      subject: "New Movie Booking 🎬",
+      subject: `New Booking 🎬 ${bookingId}`,
       html: `
-        <h2>New Booking</h2>
-        <p><b>ID:</b> ${bookingId}</p>
+        <h2>New Booking Request</h2>
+        <p><b>Booking ID:</b> ${bookingId}</p>
         <p><b>Name:</b> ${name}</p>
-        <p><b>Phone:</b> ${phone}</p>
+        <p><b>Phone:</b> ${phone || 'N/A'}</p>
         <p><b>Email:</b> ${email || 'Not provided'}</p>
         <p><b>Movie:</b> ${movie}</p>
-        <p><b>Seats:</b> ${seats.join(", ")}</p>
-        <p><b>Payment Method:</b> ${paymentMethod}</p>
-        <p><b>Reference No:</b> ${referenceNo}</p>
-        <img src="${qrImage}" />
+        <p><b>Seats:</b> ${Array.isArray(seats) ? seats.join(", ") : seats}</p>
+        <p><b>Payment Method:</b> ${paymentMethod || 'N/A'}</p>
+        <p><b>Reference No:</b> ${referenceNo || 'N/A'}</p>
+        <br/>
+        <img src="${qrImage}" alt="QR Code" />
       `
     }).catch(err => {
       console.error("Email send error (non-blocking):", err.message);
@@ -81,9 +114,7 @@ app.post("/book", async (req, res) => {
     res.json({ bookingId, qrImage, success: true });
   } catch (error) {
     console.error("Booking error:", error);
-    res.status(500).json({
-      error: "Booking failed"
-    });
+    res.status(500).json({ error: "Booking failed. Please try again." });
   }
 });
 

@@ -160,10 +160,23 @@ const App: React.FC = () => {
       )
       .subscribe();
 
+    const pollInterval = setInterval(fetchLockedSeats, 10000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [selectedMovie.id, selectedTime, fetchLockedSeats]);
+
+  useEffect(() => {
+    fetch('https://hr-films111-1.onrender.com/ping').catch(() => {});
+
+    const keepAlive = setInterval(() => {
+      fetch('https://hr-films111-1.onrender.com/ping').catch(() => {});
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(keepAlive);
+  }, []);
 
   const handleBookingStart = () => {
     if (!currentUser) {
@@ -245,40 +258,46 @@ const App: React.FC = () => {
 
   const handleBooking = async () => {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('https://hr-films111-1.onrender.com/book', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           name: currentUser?.name || 'Guest',
+          email: currentUser?.email || '',
           phone: personalContact,
           seats: selectedSeats.map(seat => seat.id),
-          movie: selectedMovie.title
+          movie: selectedMovie.title,
+          paymentMethod: paymentChannel,
+          referenceNo: paymentChannel === 'gcash' ? gcashRefNo : phonepeUtrNo
         })
       });
 
+      clearTimeout(timeout);
       const data = await response.json();
 
-      if (!response.ok) {
-        const message = data?.error || 'Booking failed';
-        throw new Error(message);
-      }
+      if (!response.ok) throw new Error(data?.error || 'Booking failed');
 
       setBookingId(data.bookingId);
       return true;
-    } catch (error) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : 'Booking failed';
-      alert(message);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        alert('Server took too long to respond. Please try again in 30 seconds.');
+      } else {
+        alert(error instanceof Error ? error.message : 'Booking failed');
+      }
       return false;
     }
   };
 
   const handleManualPayment = async () => {
     const referenceNo = paymentChannel === 'gcash' ? gcashRefNo : phonepeUtrNo;
+
     if (!referenceNo) {
-      alert(`Enter ${paymentChannel === 'gcash' ? 'GCash Reference Number' : 'PhonePe UTR Number'}`);
+      alert(`Please enter your ${paymentChannel === 'gcash' ? 'GCash Reference Number' : 'PhonePe UTR Number'}`);
       return;
     }
 
@@ -287,13 +306,16 @@ const App: React.FC = () => {
       return;
     }
 
+    setIsNotifying(true);
+
     try {
-      setIsNotifying(true);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('https://hr-films111-1.onrender.com/book', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           name: currentUser?.name || 'Guest',
           email: currentUser?.email || '',
@@ -305,27 +327,23 @@ const App: React.FC = () => {
         })
       });
 
+      clearTimeout(timeout);
       const data = await response.json();
 
-      if (!response.ok) {
-        const message = data?.error || 'Booking failed';
-        throw new Error(message);
-      }
+      if (!response.ok) throw new Error(data?.error || 'Booking failed');
 
       setBookingId(data.bookingId);
-      
-      // Simulate owner notification delay
-      setTimeout(() => {
-        setIsNotifying(false);
-        setShowOwnerAlert(true);
-        setTimeout(() => setShowOwnerAlert(false), 5000);
-        completeBooking('personal');
-      }, 1500);
-    } catch (error) {
-      console.error(error);
       setIsNotifying(false);
-      const message = error instanceof Error ? error.message : 'Booking failed';
-      alert(message);
+      setShowOwnerAlert(true);
+      setTimeout(() => setShowOwnerAlert(false), 5000);
+      completeBooking('personal');
+    } catch (error: any) {
+      setIsNotifying(false);
+      if (error.name === 'AbortError') {
+        alert('Server is waking up, please try again in 30 seconds.');
+      } else {
+        alert(error instanceof Error ? error.message : 'Booking failed');
+      }
     }
   };
 

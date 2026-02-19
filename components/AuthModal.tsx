@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
+import { supabase } from '../src/supabaseClient';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,100 +17,95 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const accounts = JSON.parse(localStorage.getItem('hrfilm_accounts') || '[]');
-      const trimmedEmail = formData.email.trim().toLowerCase();
+    const trimmedEmail = formData.email.trim().toLowerCase();
+    const trimmedPassword = formData.password.trim();
 
+    try {
       if (!isLogin) {
-        // Sign up - create new account
-        const newPassword = formData.password.trim();
-        
-        // Check if email already exists
-        const emailExists = accounts.some((acc: any) => acc.email.toLowerCase() === trimmedEmail);
-        if (emailExists) {
+        if (!formData.name.trim() || !trimmedEmail || !trimmedPassword) {
+          setError('Please fill in all fields.');
+          setIsLoading(false);
+          return;
+        }
+        if (trimmedPassword.length < 6) {
+          setError('Password must be at least 6 characters.');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', trimmedEmail)
+          .single();
+
+        if (existing) {
           setError('Email already registered. Please sign in instead.');
           setIsLoading(false);
           return;
         }
 
-        // Validate form data
-        if (!formData.name.trim() || !trimmedEmail || !newPassword) {
-          setError('Please fill in all fields.');
-          setIsLoading(false);
-          return;
-        }
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            name: formData.name.trim(),
+            email: trimmedEmail,
+            password: trimmedPassword
+          })
+          .select()
+          .single();
 
-        if (newPassword.length < 6) {
-          setError('Password kam se kam 6 characters ka hona chahiye.');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Store account data
-        const newAccount = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: formData.name.trim(),
-          email: trimmedEmail,
-          password: newPassword,
-          bookingHistory: []
-        };
-        
-        accounts.push(newAccount);
-        localStorage.setItem('hrfilm_accounts', JSON.stringify(accounts));
-        console.log('Account created:', newAccount);
+        if (insertError) throw insertError;
 
         const user: User = {
-          id: newAccount.id,
-          name: newAccount.name,
-          email: trimmedEmail
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email
         };
 
         localStorage.setItem('hrfilm_currentUser', JSON.stringify(user));
         onLogin(user);
         onClose();
-        setIsLoading(false);
-        return;
+      } else {
+        const { data: account, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', trimmedEmail)
+          .single();
+
+        if (fetchError || !account) {
+          setError('Email not found. Please create an account first.');
+          setIsLoading(false);
+          return;
+        }
+
+        if (account.password !== trimmedPassword) {
+          setError('Incorrect password. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        const user: User = {
+          id: account.id,
+          name: account.name,
+          email: account.email
+        };
+
+        localStorage.setItem('hrfilm_currentUser', JSON.stringify(user));
+        onLogin(user);
+        onClose();
       }
-
-      const trimmedPassword = formData.password.trim();
-
-      // Sign in - validate credentials
-      console.log('Sign in attempt with email:', trimmedEmail);
-      console.log('Stored accounts:', accounts);
-      
-      const account = accounts.find((acc: any) => acc.email.toLowerCase() === trimmedEmail);
-
-      if (!account) {
-        setError('Email not found. Please create an account first.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (account.password !== trimmedPassword) {
-        setError('Incorrect password. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Successful login
-      const user: User = {
-        id: account.id,
-        name: account.name,
-        email: account.email
-      };
-
-      // Store current user in localStorage
-      localStorage.setItem('hrfilm_currentUser', JSON.stringify(user));
-
-      onLogin(user);
-      onClose();
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
