@@ -1,22 +1,9 @@
 import { Movie, Seat, ShowTimeSlot } from './types';
 
 export const FEATURED_MOVIES: Movie[] = [
+  
   {
     id: 'm1',
-    title: 'Dhurandar 2',
-    genre: ['Action', 'War', 'Drama'],
-    duration: '2h 55m',
-    rating: '9.8',
-    description: 'Hamza Ali Mazari continues his relentless pursuit to topple the Pakistani crime system, eyeing the shifty Major Iqbal. As his journey unfolds, so does his transformative history.',
-    director: 'Aditya Dhar',
-    cast: ['Ranveer Singh', 'Sara Arjun', 'Arjun Rampal','Sanjay Dutt','R. Madhavan','Rakesh Bedi'],
-    posterUrl: 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/photo_2026-02-18_14-12-04.jpg',
-    backdropUrl: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=2000&auto=format&fit=crop',
-    trailerId: 'grY3uX1Yj8U',
-    releaseDate: 'March 19, 2026'
-  },
-  {
-    id: 'm2',
     title: 'Toxic: A Fairy Tale for Grown-ups',
     genre: ['Action', 'Thriller', 'Period Gangster Drama'],
     duration: '150–160m (Estimated)',
@@ -34,7 +21,7 @@ export const FEATURED_MOVIES: Movie[] = [
 export const FEATURED_MOVIE: Movie = FEATURED_MOVIES[0];
 
 export const SHOW_TIMES_DATA: ShowTimeSlot[] = [
-  { date: 'March 19, 2026', time: '08:00 PM', location: 'Vista mall Laspinas' }
+  { date: 'March 20, 2026', time: '08:00 PM', location: 'Vista mall Laspinas' }
 ]
   
 
