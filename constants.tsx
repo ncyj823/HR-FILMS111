@@ -3,7 +3,7 @@ import { Movie, Seat, ShowTimeSlot } from './types';
 export const FEATURED_MOVIES: Movie[] = [
   
   {
-    id: 'm1',
+    id: 'm2',
     title: 'Toxic: A Fairy Tale for Grown-ups',
     genre: ['Action', 'Thriller', 'Period Gangster Drama'],
     duration: '150–160m (Estimated)',
@@ -11,10 +11,10 @@ export const FEATURED_MOVIES: Movie[] = [
     description: 'A high-stakes period gangster drama set between the 1950s and 1970s. The story revolves around the inner workings of a powerful drug cartel in Goa, exploring a web of power, morality, and betrayal as diverse lives entwine within the cartel\'s deadly grip.',
     director: 'Geetu Mohandas',
     cast: ['Yash (as Raya)', 'Nayanthara (as Ganga)', 'Kiara Advani (as Nadia)', 'Huma Qureshi (as Elizabeth)', 'Tara Sutaria (as Rebecca)', 'Rukmini Vasanth (as Mellisa)', 'Akshay Oberoi', 'Sudev Nair'],
-    posterUrl: 'dist\assets\posters\Toxic.jpg.jpg',
+    posterUrl: 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/Toxic/Gemini_Generated_Image_b8gvxzb8gvxzb8gv.png',
     backdropUrl: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=2000&auto=format&fit=crop',
     trailerId: 'aF08WVSvCok',
-    releaseDate: 'March 19, 2026'
+    releaseDate: 'March 20, 2026'
   }
 ];
 

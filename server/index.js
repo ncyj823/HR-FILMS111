@@ -82,7 +82,7 @@ app.post("/book", async (req, res) => {
       service: "gmail",
       auth: {
         user: process.env.SMTP_USER || "ncy1504@gmail.com",
-        pass: process.env.GMAIL_APP_PASSWORD || "tdllgdfagbboqinb"
+        pass: process.env.GMAIL_APP_PASSWORD || "iedbqivmxnkxvsdb"
       },
       tls: {
         rejectUnauthorized: false
