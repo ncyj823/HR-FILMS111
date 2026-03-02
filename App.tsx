@@ -519,7 +519,7 @@ const App: React.FC = () => {
                   alt={selectedMovie.title} 
                   className="w-full h-full object-cover" 
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/photo_2026-02-18_14-12-04.jpg';
+                    (e.target as HTMLImageElement).src = 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/Gemini_Generated_Image_b8gvxzb8gvxzb8gv.png';
                   }}
                 />
               </div>
