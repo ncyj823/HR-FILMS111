@@ -65,7 +65,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         const user: User = {
           id: newUser.id,
           name: newUser.name,
-          email: newUser.email
+          email: newUser.email,
+          role: trimmedEmail.toLowerCase() === 'owner@hrfilms.com' ? 'owner' : 'user'
         };
 
         localStorage.setItem('hrfilm_currentUser', JSON.stringify(user));
@@ -93,7 +94,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         const user: User = {
           id: account.id,
           name: account.name,
-          email: account.email
+          email: account.email,
+          role: trimmedEmail.toLowerCase() === 'owner@hrfilms.com' ? 'owner' : 'user'
         };
 
         localStorage.setItem('hrfilm_currentUser', JSON.stringify(user));
