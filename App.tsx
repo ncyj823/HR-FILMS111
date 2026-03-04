@@ -1010,7 +1010,7 @@ const App: React.FC = () => {
                   <img 
                     src={selectedMovie.posterUrl} 
                     alt={selectedMovie.title}
-                    className="w-full h-48 object-cover rounded-xl border-3 border-red-600 shadow-lg"
+                    className="w-full h-auto object-contain rounded-xl border-3 border-red-600 shadow-lg"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/Gemini_Generated_Image_b8gvxzb8gvxzb8gv.png';
                     }}
