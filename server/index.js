@@ -91,7 +91,7 @@ app.post("/book", async (req, res) => {
 
     transporter.sendMail({
       from: process.env.SMTP_USER || "ncy1504@gmail.com",
-      to: "imscoffialjfsm2025@gmail.com",
+      to: "hriturajs33@gmail.com",
       subject: `New Booking 🎬 ${bookingId}`,
       html: `
         <h2>New Booking Request</h2>
