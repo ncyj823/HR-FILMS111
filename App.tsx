@@ -66,14 +66,14 @@ const App: React.FC = () => {
     // GCash prices are in PHP, PhonePe prices are in INR
     if (paymentChannel === 'gcash') {
       // Conversion: 800 INR = 500 PHP, 950 INR = 650 PHP, 1100 INR = 700 PHP
-      if (row === 'A' || row === 'B') return 500;
-      if (row === 'C' || row === 'D') return 650;
-      return 700; // E to L
+      if (row === 'A' || row === 'B'|| row ==='C') return 450;
+      if (row === 'D' || row === 'E' || row === 'F' || row === 'G') return 550;
+      return 650; // G to L
     } else {
       // PhonePe prices in INR
-      if (row === 'A' || row === 'B') return 800;
-      if (row === 'C' || row === 'D') return 950;
-      return 1100; // E to L
+      if (row === 'A' || row === 'B'|| row ==='C') return 662;
+      if (row === 'D' || row === 'E' || row === 'F' || row === 'G') return 809;
+      return 956; // G to L
     }
   };
 
