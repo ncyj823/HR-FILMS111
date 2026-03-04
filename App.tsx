@@ -7,6 +7,7 @@ import { getMovieInsights } from './services/geminiService';
 import { SHOW_TIMES_DATA } from './constants';
 import BeautifulQR from './src/lib/qr';
 import { supabase } from './src/supabaseClient';
+import html2pdf from 'html2pdf.js';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(BookingStep.MOVIE_INFO);
@@ -460,6 +461,21 @@ const App: React.FC = () => {
     link.download = `HRFILM-QR-${bookingDetails.transactionId}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+  };
+
+  const downloadTicketPDF = () => {
+    if (!qrRef.current) return;
+
+    const element = qrRef.current;
+    const opt = {
+      margin: 10,
+      filename: `HRFILM-TICKET-${bookingId || bookingDetails?.transactionId}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+
+    html2pdf().set(opt).from(element).save();
   };
 
   const handleResendTicket = () => {
@@ -927,8 +943,11 @@ const App: React.FC = () => {
                     >
                       <i className="fas fa-download text-xs"></i>
                     </button>
-                    <button className="bg-black text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-neutral-800 transition-all">
-                      SAVE PDF
+                    <button 
+                      onClick={downloadTicketPDF}
+                      className="bg-black text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-neutral-800 transition-all flex items-center gap-2"
+                    >
+                      <i className="fas fa-file-pdf"></i> SAVE PDF
                     </button>
                   </div>
                 </div>
