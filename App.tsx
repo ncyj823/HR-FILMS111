@@ -7,7 +7,6 @@ import { getMovieInsights } from './services/geminiService';
 import { SHOW_TIMES_DATA } from './constants';
 import BeautifulQR from './src/lib/qr';
 import { supabase } from './src/supabaseClient';
-import html2pdf from 'html2pdf.js';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(BookingStep.MOVIE_INFO);
@@ -517,24 +516,148 @@ const App: React.FC = () => {
     link.click();
   };
 
-  const downloadTicketPDF = () => {
-    if (!qrRef.current) return;
+  const downloadTicketPDF = async () => {
+    if (!bookingDetails) return;
 
-    const element = qrRef.current;
-    const opt = {
-      margin: [3, 3, 3, 3],
-      filename: `HRFILM-TICKET-${bookingId || bookingDetails?.transactionId}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.95 },
-      html2canvas: { 
-        scale: 1.2,
+    const { default: jsPDF } = await import('jspdf');
+    const { default: html2canvas } = await import('html2canvas');
+
+    // Create a hidden off-screen ticket div for PDF rendering
+    const ticketDiv = document.createElement('div');
+    ticketDiv.style.cssText = `
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      width: 794px;
+      background: #0a0a0a;
+      padding: 32px;
+      font-family: 'Oswald', sans-serif;
+      color: white;
+      border-radius: 16px;
+    `;
+
+    const posterUrl = selectedMovie.posterUrl;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingId || bookingDetails.transactionId)}&bgcolor=ffffff&color=000000`;
+    const symbol = bookingDetails.paymentChannel === 'gcash' ? '₱' : '₹';
+
+    ticketDiv.innerHTML = `
+      <div style="border: 2px solid #dc2626; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #0a0a0a 100%);">
+        
+        <!-- Header -->
+        <div style="background: #dc2626; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="color: rgba(255,255,255,0.8); font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin: 0;">HR FILMS</p>
+            <h1 style="color: white; font-size: 22px; font-weight: 900; margin: 2px 0 0; text-transform: uppercase; letter-spacing: 2px;">CINEMA TICKET</h1>
+          </div>
+          <div style="text-align: right;">
+            <p style="color: rgba(255,255,255,0.8); font-size: 9px; letter-spacing: 2px; margin: 0; text-transform: uppercase;">Booking ID</p>
+            <p style="color: white; font-size: 13px; font-weight: 900; margin: 2px 0 0; letter-spacing: 1px;">${bookingId || bookingDetails.transactionId}</p>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 24px; display: flex; gap: 24px;">
+          
+          <!-- Poster -->
+          <div style="flex-shrink: 0;">
+            <img 
+              src="${posterUrl}" 
+              crossorigin="anonymous"
+              style="width: 160px; height: 220px; object-fit: cover; border-radius: 10px; border: 2px solid #dc2626; display: block;"
+            />
+          </div>
+
+          <!-- Details -->
+          <div style="flex: 1;">
+            <p style="color: #dc2626; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 4px;">Now Showing</p>
+            <h2 style="color: white; font-size: 26px; font-weight: 900; text-transform: uppercase; margin: 0 0 16px; line-height: 1.1;">${selectedMovie.title}</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
+                <p style="color: #6b7280; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Date</p>
+                <p style="color: white; font-size: 13px; font-weight: 700; margin: 0;">${bookingDetails.bookingDate}</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
+                <p style="color: #6b7280; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Show Time</p>
+                <p style="color: #f87171; font-size: 13px; font-weight: 700; margin: 0;">${bookingDetails.showTime}</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
+                <p style="color: #6b7280; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Ticket Holder</p>
+                <p style="color: white; font-size: 13px; font-weight: 700; margin: 0;">${currentUser?.name || 'Guest'}</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
+                <p style="color: #6b7280; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Total Paid</p>
+                <p style="color: #4ade80; font-size: 13px; font-weight: 700; margin: 0;">${symbol}${bookingDetails.totalAmount}</p>
+              </div>
+            </div>
+
+            <div style="background: rgba(220,38,38,0.15); border: 1px solid #dc2626; border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+              <p style="color: #f87171; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Cinema</p>
+              <p style="color: white; font-size: 12px; font-weight: 700; margin: 0;">HR Cinema • Vista Mall, Las Piñas</p>
+            </div>
+
+            <!-- Seats -->
+            <div>
+              <p style="color: #6b7280; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px;">Seat Allocation</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                ${bookingDetails.selectedSeats.map(s => `
+                  <span style="background: #dc2626; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 900;">${s.id}</span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- QR Code -->
+          <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <img 
+              src="${qrUrl}" 
+              crossorigin="anonymous"
+              style="width: 130px; height: 130px; border-radius: 8px; border: 3px solid white; background: white; display: block;"
+            />
+            <p style="color: #6b7280; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; text-align: center; margin: 0;">Scan at Entry</p>
+          </div>
+        </div>
+
+        <!-- Dashed Divider -->
+        <div style="border-top: 2px dashed rgba(255,255,255,0.1); margin: 0 24px;"></div>
+
+        <!-- Footer -->
+        <div style="padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;">
+          <p style="color: #4b5563; font-size: 8px; margin: 0;">Valid for single entry only • Non-transferable • Keep booking ID safe</p>
+          <p style="color: #dc2626; font-size: 10px; font-weight: 700; letter-spacing: 2px; margin: 0;">HRFILM.COM</p>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(ticketDiv);
+
+    // Wait for images to load
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    try {
+      const canvas = await html2canvas(ticketDiv, {
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#000000',
         logging: false,
-        allowTaint: true
-      },
-      jsPDF: { orientation: 'portrait' as const, unit: 'mm', format: 'a4' }
-    };
+      });
 
-    html2pdf().set(opt).from(element).save();
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'JPEG', 0, (pdf.internal.pageSize.getHeight() - pdfHeight) / 2, pdfWidth, pdfHeight);
+      pdf.save(`HRFILM-TICKET-${bookingId || bookingDetails.transactionId}.pdf`);
+    } finally {
+      document.body.removeChild(ticketDiv);
+    }
   };
 
   const handleResendTicket = () => {
