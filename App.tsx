@@ -19,6 +19,8 @@ const App: React.FC = () => {
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
   const [bookingId, setBookingId] = useState('');
+  const [viewingTicketId, setViewingTicketId] = useState<string | null>(null);
+  const [viewingTicketData, setViewingTicketData] = useState<any>(null);
 
   const [selectedMovieId, setSelectedMovieId] = useState<string>(FEATURED_MOVIES[0].id);
   const selectedMovie = FEATURED_MOVIES.find(m => m.id === selectedMovieId) ?? FEATURED_MOVIES[0];
@@ -106,6 +108,14 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Check if viewing a ticket by ID via URL
+    const params = new URLSearchParams(window.location.search);
+    const ticketId = params.get('ticket') || window.location.pathname.split('/ticket/')[1];
+    
+    if (ticketId) {
+      fetchTicketData(ticketId);
+    }
+
     // Load user data from localStorage on app load
     const storedUser = localStorage.getItem('hrfilm_currentUser');
     if (storedUser) {
@@ -124,6 +134,26 @@ const App: React.FC = () => {
     };
     fetchInsights();
   }, [selectedMovie.title]);
+
+  const fetchTicketData = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('booking_id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching ticket:', error);
+        return;
+      }
+
+      setViewingTicketId(id);
+      setViewingTicketData(data);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   useEffect(() => {
     const storedSeats = localStorage.getItem('hrfilm_bookedSeats');
@@ -346,7 +376,7 @@ const App: React.FC = () => {
       setIsNotifying(false);
       setShowOwnerAlert(true);
       setTimeout(() => setShowOwnerAlert(false), 5000);
-      completeBooking('personal');
+      await completeBooking('personal');
     } catch (error: any) {
       setIsNotifying(false);
       if (error.name === 'AbortError') {
@@ -370,26 +400,49 @@ const App: React.FC = () => {
       return;
     }
     // Simulate owner notification delay
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsNotifying(false);
       setShowOwnerAlert(true);
       setTimeout(() => setShowOwnerAlert(false), 5000);
-      completeBooking('card');
+      await completeBooking('card');
     }, 1500);
   };
 
-  const completeBooking = (method: BookingDetails['paymentMethod']) => {
+  const completeBooking = async (method: BookingDetails['paymentMethod']) => {
+    const transactionId = `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
     const details: BookingDetails = {
       movieId: selectedMovie.id,
       selectedSeats,
       totalAmount,
       bookingDate: selectedMovie.releaseDate,
       showTime: selectedTime,
-      transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      transactionId: transactionId,
       paymentMethod: method,
       paymentChannel,
       contactInfo: personalContact
     };
+    
+    // Save booking to Supabase
+    try {
+      await supabase.from('bookings').insert({
+        booking_id: transactionId,
+        user_name: currentUser?.name || 'Guest User',
+        user_email: currentUser?.email || personalContact,
+        movie_title: selectedMovie.title,
+        seats: selectedSeats.map(s => s.id).join(','),
+        show_time: selectedTime,
+        booking_date: selectedMovie.releaseDate,
+        total_amount: totalAmount,
+        payment_method: method,
+        payment_channel: paymentChannel,
+        contact_info: personalContact,
+        poster_url: selectedMovie.posterUrl,
+        created_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error saving booking to Supabase:', error);
+    }
     
     setBookingDetails(details);
 
@@ -411,13 +464,14 @@ const App: React.FC = () => {
         }
         accounts[userIndex].bookingHistory.push({
           ...details,
-          bookingId: bookingId,
+          bookingId: transactionId,
           bookingDateTime: new Date().toISOString()
         });
         localStorage.setItem('hrfilm_accounts', JSON.stringify(accounts));
       }
     }
     
+    setBookingId(transactionId);
     setStep(BookingStep.TICKET);
   };
 
@@ -494,6 +548,88 @@ const App: React.FC = () => {
       onAuthClick={() => setIsAuthModalOpen(true)} 
       onLogout={handleLogout}
     >
+      {/* Ticket Viewer - Scanned QR Code */}
+      {viewingTicketId && viewingTicketData && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-white via-white to-gray-50 rounded-3xl overflow-hidden shadow-2xl max-w-md w-full p-8 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="text-center mb-8">
+              <button 
+                onClick={() => setViewingTicketId(null)}
+                className="absolute top-4 right-4 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center hover:bg-neutral-800"
+              >
+                ✕
+              </button>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+                  <i className="fas fa-shield-alt text-pink-600 text-lg"></i>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-black text-black uppercase tracking-wider">ACCESS GRANTED</h1>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-[0.15em] font-bold">Verified Security Clearance</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Ticket Details */}
+            <div className="space-y-4 mb-8">
+              <div className="bg-pink-50 rounded-2xl p-4 border-l-4 border-pink-600">
+                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Movie</p>
+                <p className="font-black text-lg text-black">{viewingTicketData.movie_title}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-100 rounded-2xl p-4">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Showtime</p>
+                  <p className="font-bold text-sm text-black">{viewingTicketData.show_time}</p>
+                </div>
+                <div className="bg-gray-100 rounded-2xl p-4">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Date</p>
+                  <p className="font-bold text-sm text-black">{viewingTicketData.booking_date}</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-100 rounded-2xl p-4">
+                <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Seats</p>
+                <div className="flex flex-wrap gap-2">
+                  {viewingTicketData.seats.split(',').map((seat: string) => (
+                    <span key={seat} className="bg-pink-600 text-white px-2 py-1 rounded font-bold text-xs">
+                      {seat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gray-100 rounded-2xl p-4">
+                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Passenger Name</p>
+                <p className="font-bold text-black">{viewingTicketData.user_name}</p>
+              </div>
+
+              <div className="bg-gray-100 rounded-2xl p-4">
+                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Contact</p>
+                <p className="font-bold text-sm text-black break-all">{viewingTicketData.user_email || viewingTicketData.contact_info}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-100 rounded-2xl p-4">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Total Amount</p>
+                  <p className="font-black text-lg text-pink-600">{viewingTicketData.payment_channel === 'gcash' ? '₱' : '₹'}{viewingTicketData.total_amount}</p>
+                </div>
+                <div className="bg-gray-100 rounded-2xl p-4">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Booking ID</p>
+                  <p className="font-mono text-xs font-bold text-black">{viewingTicketData.booking_id}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="bg-green-100 border-2 border-green-600 rounded-2xl p-4 text-center">
+              <p className="text-green-700 font-black uppercase text-sm">✓ Verified & Valid</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Simulated Owner Notification Toast */}
       {showOwnerAlert && (
         <div className="fixed bottom-10 right-10 z-[200] animate-bounce">
@@ -889,7 +1025,7 @@ const App: React.FC = () => {
               {/* QR Code Section */}
               <div className="bg-white rounded-2xl border-4 border-black p-6 mb-8 flex justify-center" ref={qrRef}>
                 <div className="w-64 h-64 flex items-center justify-center bg-white">
-                  <BeautifulQR value={bookingId || bookingDetails.transactionId} />
+                  <BeautifulQR value={`https://hr-films111.vercel.app/ticket/${bookingId || bookingDetails.transactionId}`} />
                 </div>
               </div>
 
