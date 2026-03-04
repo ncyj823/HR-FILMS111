@@ -1047,7 +1047,7 @@ const App: React.FC = () => {
                 <p className="text-[11px] text-gray-400 uppercase font-bold tracking-widest mb-3">Seat Allocation</p>
                 <div className="flex flex-wrap gap-2">
                   {bookingDetails.selectedSeats.map(seat => (
-                    <span key={seat.id} className="bg-red-600 text-white px-4 py-2 rounded-lg font-black text-lg shadow-lg border-2 border-red-500">
+                    <span key={seat.id} className="bg-red-600 text-white px-3 py-1.5 rounded font-bold text-sm border border-red-500">
                       {seat.id}
                     </span>
                   ))}
