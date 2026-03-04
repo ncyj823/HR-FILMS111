@@ -522,10 +522,10 @@ const App: React.FC = () => {
 
     const element = qrRef.current;
     const opt = {
-      margin: 10,
+      margin: 5,
       filename: `HRFILM-TICKET-${bookingId || bookingDetails?.transactionId}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 1.5 },
       jsPDF: { orientation: 'portrait' as const, unit: 'mm', format: 'a4' }
     };
 
@@ -994,17 +994,17 @@ const App: React.FC = () => {
           <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
             
             {/* Main Ticket Card - Optimized for PDF */}
-            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl overflow-hidden shadow-2xl border-4 border-red-600 p-8">
+            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl overflow-hidden shadow-2xl border-4 border-red-600 p-6">
               
               {/* Header */}
-              <div className="text-center mb-6 pb-6 border-b-2 border-red-600">
+              <div className="text-center mb-4 pb-4 border-b-2 border-red-600">
                 <p className="text-red-500 font-black text-xs tracking-[0.3em] uppercase mb-2">Digital Online Pass</p>
                 <h1 className="text-3xl font-black text-white uppercase tracking-wider">CINEMA TICKET</h1>
                 <p className="text-gray-400 text-xs mt-2">Valid for Single Entry</p>
               </div>
 
               {/* Top Section with Poster */}
-              <div className="grid grid-cols-3 gap-6 mb-6 pb-6 border-b border-white/10">
+              <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-white/10">
                 {/* Movie Poster */}
                 <div className="col-span-1">
                   <img 
@@ -1043,7 +1043,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Seats Section */}
-              <div className="mb-6 pb-6 border-b border-white/10">
+              <div className="mb-4 pb-4 border-b border-white/10">
                 <p className="text-[11px] text-gray-400 uppercase font-bold tracking-widest mb-3">Seat Allocation</p>
                 <div className="flex flex-wrap gap-2">
                   {bookingDetails.selectedSeats.map(seat => (
@@ -1056,15 +1056,15 @@ const App: React.FC = () => {
               </div>
 
               {/* QR Code */}
-              <div className="mb-6 pb-6 border-b border-white/10 flex flex-col items-center">
-                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-4">Scan for Entry</p>
-                <div className="bg-white rounded-xl p-6 border-3 border-white shadow-xl">
+              <div className="mb-4 pb-4 border-b border-white/10 flex flex-col items-center">
+                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-3">Scan for Entry</p>
+                <div className="bg-white rounded-xl p-4 border-3 border-white shadow-xl">
                   <BeautifulQR value={`https://hr-films111.vercel.app/ticket/${bookingId || bookingDetails.transactionId}`} />
                 </div>
               </div>
 
               {/* Booking Info */}
-              <div className="grid grid-cols-2 gap-4 mb-6 pb-6 border-b border-white/10">
+              <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-white/10">
                 <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Booking ID</p>
                   <p className="text-sm font-mono font-bold text-yellow-400 break-all">{bookingId || bookingDetails.transactionId}</p>
