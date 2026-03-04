@@ -856,105 +856,103 @@ const App: React.FC = () => {
         {/* Step 4: Digital Ticket */}
         {step === BookingStep.TICKET && bookingDetails && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="text-center mb-10">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <i className="fas fa-check text-2xl text-white"></i>
-              </div>
-              <h2 className="text-3xl font-oswald font-bold uppercase mb-2">Booking Confirmed!</h2>
-              <p className="text-gray-500 text-sm">
-                {bookingDetails.paymentMethod === 'personal' 
-                  ? `Owner notified via ${bookingDetails.contactInfo}. Please settle payment personally.`
-                  : `Hi ${currentUser?.name}, your digital pass is ready.`}
-              </p>
-            </div>
-
-            <div className="bg-white text-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/20 mb-8">
-              <div className="p-8 bg-black text-white relative border-b-2 border-dashed border-white/20">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-2xl font-oswald font-bold leading-tight uppercase italic">{selectedMovie.title}</h3>
-                    <p className="text-[10px] text-red-500 font-bold tracking-[0.2em] uppercase mt-1">
-                      {bookingDetails.paymentMethod === 'personal' ? 'Pending Payment Verification' : 'Confirmed Admission'}
-                    </p>
+            
+            {/* Main Ticket Card */}
+            <div ref={qrRef} className="bg-gradient-to-br from-white via-white to-gray-50 rounded-3xl overflow-hidden shadow-2xl p-8">
+              
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+                    <i className="fas fa-shield-alt text-pink-600 text-lg"></i>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold opacity-40 uppercase">Booking ID</p>
-                    <p className="text-[10px] font-mono">{bookingId || bookingDetails.transactionId}</p>
-                    <p className="mt-2 text-[10px] font-bold opacity-40 uppercase">Movie</p>
-                    <p className="text-[10px] font-mono">{selectedMovie.title}</p>
+                  <div>
+                    <h1 className="text-2xl font-black text-black uppercase tracking-wider">ACCESS GRANTED</h1>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-[0.15em] font-bold">Verified Security Clearance</p>
                   </div>
                 </div>
-
-                <div className="mb-6 pt-4 border-t border-white/10">
-                  <p className="text-[10px] uppercase opacity-40 font-bold">Ticket Holder</p>
-                  <p className="text-lg font-oswald font-bold uppercase tracking-wide">{currentUser?.name || 'Guest User'}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6 mb-4">
-                  <div>
-                    <p className="text-[10px] uppercase opacity-40 font-bold">Showtime</p>
-                    <p className="text-sm font-bold">{bookingDetails.showTime}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase opacity-40 font-bold">Hall</p>
-                    <p className="text-sm font-bold">Imax Hall 4</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-[10px] uppercase opacity-40 font-bold">Date</p>
-                    <p className="text-sm font-bold">{bookingDetails.bookingDate}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase opacity-40 font-bold">Seats</p>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {bookingDetails.selectedSeats.map(s => (
-                        <span key={s.id} className="bg-white/10 px-2 py-0.5 rounded text-xs font-bold border border-white/5">
-                          {s.id}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-[#050505] rounded-full"></div>
-                <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-[#050505] rounded-full"></div>
               </div>
 
-              <div className="p-10 text-center bg-white" ref={qrRef}>
-                <div className="bg-white p-4 inline-block border-2 border-black rounded-2xl mb-6 relative">
+              {/* Controls */}
+              <div className="flex gap-3 mb-8">
+                <button className="flex-1 bg-pink-500 text-white py-3 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-pink-600 transition-all shadow-lg">
+                  QR
+                </button>
+                <button className="flex-1 text-gray-400 py-3 rounded-xl font-black uppercase text-sm tracking-wider border-2 border-gray-200 hover:border-gray-300 transition-all">
+                  BAR
+                </button>
+                <button className="w-12 h-12 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-gray-300 transition-all">
+                  <i className="fas fa-sync text-lg"></i>
+                </button>
+              </div>
+
+              {/* QR Code Section */}
+              <div className="bg-white rounded-2xl border-4 border-black p-6 mb-8 flex justify-center" ref={qrRef}>
+                <div className="w-64 h-64 flex items-center justify-center bg-white">
                   <BeautifulQR value={bookingId || bookingDetails.transactionId} />
-                  {bookingDetails.paymentMethod === 'personal' && (
-                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center pointer-events-none">
-                      <span className="bg-red-600 text-white text-[8px] font-black uppercase px-2 py-1 rotate-12 shadow-lg">...</span>
-                    </div>
-                  )}
                 </div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-4">Show this QR at Entry</p>
-                <div className="border-t border-dashed border-gray-200 pt-6 flex justify-between items-center text-left">
-                  <div>
-                    <p className="text-[10px] uppercase text-gray-400 font-bold">Total Price</p>
-                    <p className="text-xl font-oswald font-bold">{bookingDetails.paymentChannel === 'gcash' ? '₱' : '₹'}{bookingDetails.totalAmount.toFixed(2)}</p>
+              </div>
+
+              {/* Entry Protocols */}
+              <div className="mb-8">
+                <h2 className="text-pink-600 font-black text-lg uppercase tracking-wider mb-2">Entry Protocols</h2>
+                <p className="text-[10px] text-gray-500 uppercase tracking-[0.1em] font-bold mb-4">Security Clearance Checklist</p>
+                
+                <div className="bg-gray-100 rounded-2xl p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0 mt-1">
+                      <i className="fas fa-qrcode text-pink-600 text-xs"></i>
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-black">1. Digital QR Pass:</p>
+                      <p className="text-xs text-gray-600">Scan this pass mandatory at gate.</p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={downloadQRCode}
-                      className="bg-black text-white p-2.5 rounded-lg hover:bg-neutral-800 transition-all flex items-center justify-center"
-                      title="Download QR"
-                    >
-                      <i className="fas fa-download text-xs"></i>
-                    </button>
-                    <button 
-                      onClick={downloadTicketPDF}
-                      className="bg-black text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-neutral-800 transition-all flex items-center gap-2"
-                    >
-                      <i className="fas fa-file-pdf"></i> SAVE PDF
-                    </button>
+                </div>
+
+                <div className="bg-gray-100 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0 mt-1">
+                      <i className="fas fa-id-card text-pink-600 text-xs"></i>
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-black">2. Valid Identification:</p>
+                      <p className="text-xs text-gray-600">Required for entry verification.</p>
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Time & ID Info */}
+              <div className="border-t-2 border-dashed border-gray-300 pt-6 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-clock text-pink-600"></i>
+                    <span className="font-black text-sm text-black">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
+                  </div>
+                  <p className="text-[9px] text-gray-500 font-bold">ID: {(bookingId || bookingDetails.transactionId).slice(0, 10).toUpperCase()} | SECURE ACCESS PROTOCOL</p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={downloadQRCode}
+                    className="w-10 h-10 rounded-lg bg-black text-white hover:bg-neutral-800 transition-all flex items-center justify-center"
+                    title="Download QR"
+                  >
+                    <i className="fas fa-download text-sm"></i>
+                  </button>
+                  <button 
+                    onClick={downloadTicketPDF}
+                    className="w-10 h-10 rounded-lg bg-black text-white hover:bg-neutral-800 transition-all flex items-center justify-center"
+                    title="Save PDF"
+                  >
+                    <i className="fas fa-file-pdf text-sm"></i>
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            {/* Action Buttons Below Ticket */}
+            <div className="flex flex-col gap-4 mt-8">
               <button 
                 onClick={handleResendTicket}
                 disabled={isResending}
