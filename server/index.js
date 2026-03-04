@@ -92,31 +92,28 @@ app.post("/book", async (req, res) => {
       }
     });
 
-    // Send email notification to owner
-    try {
-      await transporter.sendMail({
-        from: 'ncy1504@gmail.com',
-        to: 'hriturajs33@gmail.com',
-        subject: `New Booking 🎬 ${bookingId}`,
-        html: `
-          <h2>New Booking Request</h2>
-          <p><b>Booking ID:</b> ${bookingId}</p>
-          <p><b>Name:</b> ${name}</p>
-          <p><b>Phone:</b> ${phone || 'N/A'}</p>
-          <p><b>Email:</b> ${email || 'Not provided'}</p>
-          <p><b>Movie:</b> ${movie}</p>
-          <p><b>Seats:</b> ${Array.isArray(seats) ? seats.join(", ") : seats}</p>
-          <p><b>Payment Method:</b> ${paymentMethod || 'N/A'}</p>
-          <p><b>Reference No:</b> ${referenceNo || 'N/A'}</p>
-          <br/>
-          <img src="${qrImage}" alt="QR Code" />
-        `
-      });
-      console.log("✅ Email sent successfully to owner for booking:", bookingId);
-    } catch (emailError) {
-      console.error("❌ Email send error:", emailError.message);
-      console.error("Full error:", emailError);
-    }
+    transporter.sendMail({
+      from: 'ncy1504@gmail.com',
+      to: 'hriturajs33@gmail.com',
+      subject: `New Booking 🎬 ${bookingId}`,
+      html: `
+        <h2>New Booking Request</h2>
+        <p><b>Booking ID:</b> ${bookingId}</p>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Phone:</b> ${phone || 'N/A'}</p>
+        <p><b>Email:</b> ${email || 'Not provided'}</p>
+        <p><b>Movie:</b> ${movie}</p>
+        <p><b>Seats:</b> ${Array.isArray(seats) ? seats.join(", ") : seats}</p>
+        <p><b>Payment Method:</b> ${paymentMethod || 'N/A'}</p>
+        <p><b>Reference No:</b> ${referenceNo || 'N/A'}</p>
+        <br/>
+        <img src="${qrImage}" alt="QR Code" />
+      `
+    }).then(() => {
+      console.log('Email sent successfully to hriturajs33@gmail.com');
+    }).catch(err => {
+      console.error("Email send error (non-blocking):", err.message);
+    });
 
     console.log("Booking completed:", bookingId);
     res.json({ bookingId, qrImage, success: true });
