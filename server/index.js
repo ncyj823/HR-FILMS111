@@ -79,13 +79,10 @@ app.post("/book", async (req, res) => {
     }
 
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      family: 4,  // Force IPv4 (Render free tier blocks IPv6 for Gmail)
+      service: 'gmail',
       auth: {
         user: 'ncy1504@gmail.com',
-        pass: 'iedbqivmxnkxvsdb'
+        pass: process.env.GMAIL_APP_PASSWORD
       },
       tls: {
         rejectUnauthorized: false
