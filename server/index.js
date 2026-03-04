@@ -6,6 +6,12 @@ const { createClient } = require('@supabase/supabase-js');
 
 require('dotenv').config();
 
+console.log('ENV CHECK:', {
+  supabaseUrl: process.env.SUPABASE_URL ? '✅' : '❌',
+  supabaseKey: process.env.SUPABASE_SERVICE_KEY ? '✅' : '❌',
+  gmailPass: process.env.GMAIL_APP_PASSWORD ? '✅' : '❌'
+});
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
