@@ -238,13 +238,6 @@ const App: React.FC = () => {
     setSelectedSeats([]);
   };
 
-  const clearBookedSeats = () => {
-    // Owner function to clear all booked seats from localStorage
-    localStorage.removeItem('hrfilm_bookedSeats');
-    setBookedSeats([]);
-    alert('All booked seats have been cleared from storage. You can now rebook seats.');
-  };
-
   const toggleSeat = async (seat: Seat) => {
     const isSelected = selectedSeats.some(s => s.id === seat.id);
     const isBookedSeat = seat.isBooked || bookedSeats.includes(seat.id);
@@ -612,15 +605,6 @@ const App: React.FC = () => {
               >
                 {currentUser ? 'Book Your Seats' : 'Sign In to Book'}
               </button>
-              
-              {currentUser?.role === 'owner' && (
-                <button 
-                  onClick={clearBookedSeats}
-                  className="w-full md:w-auto ml-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-12 rounded-xl text-lg transition-all"
-                >
-                  Clear Booked Seats
-                </button>
-              )}
             </div>
           </div>
         )}
