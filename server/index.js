@@ -49,8 +49,8 @@ const startupTransporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: 'ncy1504@gmail.com',
-    pass: 'kbwgqvblsbhayfzm'
+    user: process.env.GMAIL_USER || 'ncy1504@gmail.com',
+    pass: process.env.GMAIL_APP_PASSWORD
   }
 });
 startupTransporter.verify((error) => {
@@ -98,8 +98,8 @@ app.post("/book", async (req, res) => {
       port: 465,
       secure: true,
       auth: {
-        user: 'ncy1504@gmail.com',
-        pass: 'kbwgqvblsbhayfzm'
+        user: process.env.GMAIL_USER || 'ncy1504@gmail.com',
+        pass: process.env.GMAIL_APP_PASSWORD
       }
     });
 
@@ -134,5 +134,5 @@ app.post("/book", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
