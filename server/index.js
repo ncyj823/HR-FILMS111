@@ -43,6 +43,21 @@ app.get("/ping", (req, res) => {
   res.json({ pong: true, timestamp: new Date() });
 });
 
+// Verify Gmail on startup
+const startupTransporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'ncy1504@gmail.com',
+    pass: 'kbwgqvblsbhayfzm'
+  }
+});
+startupTransporter.verify((error) => {
+  if (error) console.error('❌ Gmail auth failed:', error.message);
+  else console.log('✅ Gmail connected successfully!');
+});
+
 app.post("/book", async (req, res) => {
   const { name, phone, email, seats, movie, paymentMethod, referenceNo } = req.body;
 
@@ -79,13 +94,12 @@ app.post("/book", async (req, res) => {
     }
 
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: 'ncy1504@gmail.com',
         pass: 'kbwgqvblsbhayfzm'
-      },
-      tls: {
-        rejectUnauthorized: false
       }
     });
 
