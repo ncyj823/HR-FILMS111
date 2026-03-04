@@ -52,8 +52,10 @@ app.get("/ping", (req, res) => {
 // Verify Gmail on startup
 const startupTransporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  family: 4, // Force IPv4
   auth: {
     user: process.env.GMAIL_USER || 'ncy1504@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD
@@ -101,8 +103,10 @@ app.post("/book", async (req, res) => {
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      family: 4, // Force IPv4
       auth: {
         user: process.env.GMAIL_USER || 'ncy1504@gmail.com',
         pass: process.env.GMAIL_APP_PASSWORD
