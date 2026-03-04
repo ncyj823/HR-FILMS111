@@ -991,108 +991,116 @@ const App: React.FC = () => {
 
         {/* Step 4: Digital Ticket */}
         {step === BookingStep.TICKET && bookingDetails && (
-          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
             
             {/* Main Ticket Card */}
-            <div ref={qrRef} className="bg-gradient-to-br from-white via-white to-gray-50 rounded-3xl overflow-hidden shadow-2xl p-8">
+            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
               
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
-                    <i className="fas fa-shield-alt text-pink-600 text-lg"></i>
+              {/* Top Section with Poster */}
+              <div className="grid grid-cols-3 gap-4 p-6">
+                {/* Movie Poster */}
+                <div className="col-span-1">
+                  <img 
+                    src={selectedMovie.posterUrl} 
+                    alt={selectedMovie.title}
+                    className="w-full h-40 object-cover rounded-xl border-2 border-red-600"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/Gemini_Generated_Image_b8gvxzb8gvxzb8gv.png';
+                    }}
+                  />
+                </div>
+
+                {/* Movie Details */}
+                <div className="col-span-2">
+                  <div className="mb-3">
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">FILM</p>
+                    <h2 className="text-xl font-black text-white uppercase leading-tight">{selectedMovie.title}</h2>
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-black text-black uppercase tracking-wider">ACCESS GRANTED</h1>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-[0.15em] font-bold">Verified Security Clearance</p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div>
+                      <p className="text-[9px] text-gray-500 uppercase font-bold">Show Time</p>
+                      <p className="text-sm font-bold text-white">{bookingDetails.showTime}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-500 uppercase font-bold">Date</p>
+                      <p className="text-sm font-bold text-white">{bookingDetails.bookingDate}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-2">
+                    <p className="text-[9px] text-red-400 uppercase font-bold">Hall</p>
+                    <p className="text-sm font-bold text-red-300">HR Cinema • Vista Mall</p>
                   </div>
                 </div>
               </div>
 
-              {/* Controls */}
-              <div className="flex gap-3 mb-8">
-                <button className="flex-1 bg-pink-500 text-white py-3 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-pink-600 transition-all shadow-lg">
-                  QR
-                </button>
-                <button className="flex-1 text-gray-400 py-3 rounded-xl font-black uppercase text-sm tracking-wider border-2 border-gray-200 hover:border-gray-300 transition-all">
-                  BAR
-                </button>
-                <button className="w-12 h-12 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-gray-300 transition-all">
-                  <i className="fas fa-sync text-lg"></i>
-                </button>
+              {/* Divider */}
+              <div className="border-t border-white/10"></div>
+
+              {/* Seats Section */}
+              <div className="px-6 py-4">
+                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-3">Your Seats</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {bookingDetails.selectedSeats.map(seat => (
+                    <span key={seat.id} className="bg-red-600 text-white px-3 py-1 rounded-lg font-black text-sm">
+                      {seat.id}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-500">Total Seats: <span className="text-white font-bold">{bookingDetails.selectedSeats.length}</span></p>
               </div>
 
-              {/* QR Code Section */}
-              <div className="bg-white rounded-2xl border-4 border-black p-6 mb-8 flex justify-center" ref={qrRef}>
-                <div className="w-64 h-64 flex items-center justify-center bg-white">
+              {/* Divider */}
+              <div className="border-t border-white/10"></div>
+
+              {/* QR Code */}
+              <div className="p-6 flex justify-center">
+                <div className="bg-white rounded-xl p-4 border-2 border-white">
                   <BeautifulQR value={`https://hr-films111.vercel.app/ticket/${bookingId || bookingDetails.transactionId}`} />
                 </div>
               </div>
 
-              {/* Entry Protocols */}
-              <div className="mb-8">
-                <h2 className="text-pink-600 font-black text-lg uppercase tracking-wider mb-2">Entry Protocols</h2>
-                <p className="text-[10px] text-gray-500 uppercase tracking-[0.1em] font-bold mb-4">Security Clearance Checklist</p>
-                
-                <div className="bg-gray-100 rounded-2xl p-4 mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0 mt-1">
-                      <i className="fas fa-qrcode text-pink-600 text-xs"></i>
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-black">1. Digital QR Pass:</p>
-                      <p className="text-xs text-gray-600">Scan this pass mandatory at gate.</p>
-                    </div>
-                  </div>
-                </div>
+              {/* Divider */}
+              <div className="border-t border-white/10"></div>
 
-                <div className="bg-gray-100 rounded-2xl p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0 mt-1">
-                      <i className="fas fa-id-card text-pink-600 text-xs"></i>
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-black">2. Valid Identification:</p>
-                      <p className="text-xs text-gray-600">Required for entry verification.</p>
-                    </div>
-                  </div>
+              {/* Booking Info */}
+              <div className="px-6 py-4 grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Booking ID</p>
+                  <p className="text-sm font-mono font-bold text-white break-all">{bookingId || bookingDetails.transactionId}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Amount</p>
+                  <p className="text-sm font-bold text-green-400">{currencySymbol}{bookingDetails.totalAmount}</p>
                 </div>
               </div>
 
-              {/* Time & ID Info */}
-              <div className="border-t-2 border-dashed border-gray-300 pt-6 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <i className="fas fa-clock text-pink-600"></i>
-                    <span className="font-black text-sm text-black">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
-                  </div>
-                  <p className="text-[9px] text-gray-500 font-bold">ID: {(bookingId || bookingDetails.transactionId).slice(0, 10).toUpperCase()} | SECURE ACCESS PROTOCOL</p>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={downloadQRCode}
-                    className="w-10 h-10 rounded-lg bg-black text-white hover:bg-neutral-800 transition-all flex items-center justify-center"
-                    title="Download QR"
-                  >
-                    <i className="fas fa-download text-sm"></i>
-                  </button>
-                  <button 
-                    onClick={downloadTicketPDF}
-                    className="w-10 h-10 rounded-lg bg-black text-white hover:bg-neutral-800 transition-all flex items-center justify-center"
-                    title="Save PDF"
-                  >
-                    <i className="fas fa-file-pdf text-sm"></i>
-                  </button>
-                </div>
+              {/* Action Buttons */}
+              <div className="px-6 pb-6 pt-4 flex gap-3">
+                <button 
+                  onClick={downloadQRCode}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold text-sm uppercase transition-all"
+                  title="Download QR"
+                >
+                  <i className="fas fa-download mr-2"></i> QR
+                </button>
+                <button 
+                  onClick={downloadTicketPDF}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold text-sm uppercase transition-all"
+                  title="Save PDF"
+                >
+                  <i className="fas fa-file-pdf mr-2"></i> PDF
+                </button>
               </div>
             </div>
 
             {/* Action Buttons Below Ticket */}
-            <div className="flex flex-col gap-4 mt-8">
+            <div className="flex flex-col gap-3 mt-6">
               <button 
                 onClick={handleResendTicket}
                 disabled={isResending}
-                className={`w-full py-4 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border ${
+                className={`w-full py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border ${
                   resendSuccess 
                     ? 'bg-green-500/10 border-green-500/50 text-green-500' 
                     : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
@@ -1108,14 +1116,14 @@ const App: React.FC = () => {
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <i className="fas fa-paper-plane"></i> Resend Ticket to Email
+                    <i className="fas fa-paper-plane"></i> Resend Ticket
                   </span>
                 )}
               </button>
 
               <button 
                 onClick={() => { setStep(BookingStep.MOVIE_INFO); setSelectedSeats([]); setPersonalContact(''); }}
-                className="w-full py-4 text-sm font-bold text-white/40 hover:text-white transition-all uppercase tracking-widest"
+                className="w-full py-3 text-sm font-bold text-white/50 hover:text-white transition-all uppercase tracking-widest border border-white/10 rounded-lg"
               >
                 Back to Home
               </button>
