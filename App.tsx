@@ -16,6 +16,8 @@ const App: React.FC = () => {
   const [lockedSeats, setLockedSeats] = useState<string[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [allSeats, setAllSeats] = useState<Seat[]>([]);
+  const [isLoadingSeats, setIsLoadingSeats] = useState(true);
 
   const [bookingId, setBookingId] = useState('');
   const [viewingTicketId, setViewingTicketId] = useState<string | null>(null);
@@ -47,6 +49,55 @@ const App: React.FC = () => {
   const [isNotifying, setIsNotifying] = useState(false);
   const [showOwnerAlert, setShowOwnerAlert] = useState(false);
   const currencySymbol = paymentChannel === 'gcash' ? '₱' : '₹';
+
+  // Fetch seats from Supabase database
+  const fetchSeatsFromDatabase = useCallback(async () => {
+    setIsLoadingSeats(true);
+    try {
+      const { data, error } = await supabase
+        .from('seats')
+        .select('*')
+        .eq('movie_id', selectedMovie.id)
+        .eq('show_time', selectedTime)
+        .order('row_letter')
+        .order('seat_index');
+
+      if (error) {
+        console.error('Error fetching seats:', error);
+        // Fallback to local seats if database is empty
+        setAllSeats(SEATS_DATA);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Convert database seats to app format
+        const seats: Seat[] = data.map(dbSeat => ({
+          id: dbSeat.seat_number,
+          row: dbSeat.row_letter,
+          number: dbSeat.seat_index,
+          type: 'standard',
+          price: getSeatPrice(dbSeat.row_letter),
+          isBooked: dbSeat.is_booked
+        }));
+        setAllSeats(seats);
+        
+        // Update booked seats list
+        const booked = data
+          .filter(seat => seat.is_booked)
+          .map(seat => seat.seat_number);
+        setBookedSeats(booked);
+      } else {
+        // No seats in database, use local data
+        console.log('No seats found in database, using local data');
+        setAllSeats(SEATS_DATA);
+      }
+    } catch (error) {
+      console.error('Error loading seats:', error);
+      setAllSeats(SEATS_DATA);
+    } finally {
+      setIsLoadingSeats(false);
+    }
+  }, [selectedMovie.id, selectedTime]);
 
   const fetchLockedSeats = useCallback(async () => {
     const { data, error } = await supabase
@@ -197,6 +248,37 @@ const App: React.FC = () => {
       clearInterval(pollInterval);
     };
   }, [selectedMovie.id, selectedTime, fetchLockedSeats]);
+
+  // ✅ LOAD SEATS FROM DATABASE ON MOUNT
+  useEffect(() => {
+    fetchSeatsFromDatabase();
+  }, [selectedMovie.id, selectedTime, fetchSeatsFromDatabase]);
+
+  // ✅ REAL-TIME SUBSCRIPTION FOR SEAT CHANGES
+  useEffect(() => {
+    // Subscribe to real-time changes in seats table
+    const seatsChannel = supabase
+      .channel(`seats_${selectedMovie.id}_${selectedTime}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'seats',
+          filter: `movie_id=eq.${selectedMovie.id},show_time=eq.${selectedTime}`
+        },
+        (payload) => {
+          console.log('Seat changed:', payload);
+          // Refresh seats when any change occurs
+          fetchSeatsFromDatabase();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(seatsChannel);
+    };
+  }, [selectedMovie.id, selectedTime, fetchSeatsFromDatabase]);
 
   useEffect(() => {
     fetch('https://hr-films111-1.onrender.com/ping').catch(() => {});
@@ -422,7 +504,7 @@ const App: React.FC = () => {
       contactInfo: personalContact
     };
     
-    // Save booking to Supabase
+    // ✅ STEP 1: Save booking to Supabase
     try {
       await supabase.from('bookings').insert({
         booking_id: transactionId,
@@ -443,8 +525,31 @@ const App: React.FC = () => {
       console.error('Error saving booking to Supabase:', error);
     }
     
+    // ✅ STEP 2: Mark seats as BOOKED in database (PERSISTENT!)
+    try {
+      for (const seat of selectedSeats) {
+        await supabase
+          .from('seats')
+          .update({
+            is_booked: true,
+            booked_by: currentUser?.email || personalContact,
+            booked_at: new Date().toISOString(),
+            booking_id: transactionId
+          })
+          .eq('seat_number', seat.id)
+          .eq('movie_id', selectedMovie.id)
+          .eq('show_time', selectedTime);
+      }
+      
+      // Refresh seats from database to show updated status
+      await fetchSeatsFromDatabase();
+    } catch (error) {
+      console.error('Error marking seats as booked:', error);
+    }
+    
     setBookingDetails(details);
 
+    // Update local state for UI
     const newlyBookedSeatIds = selectedSeats.map(seat => seat.id);
     if (newlyBookedSeatIds.length > 0) {
       const updatedSeatSet = Array.from(new Set([...bookedSeats, ...newlyBookedSeatIds]));
@@ -903,9 +1008,14 @@ const App: React.FC = () => {
             {/* Seating Layout */}
             <div className="seating-wrapper mb-12 overflow-x-auto pb-4">
               <div className="min-w-max mx-auto px-6">
-                {(() => {
+                {isLoadingSeats ? (
+                  <div className="text-center py-20">
+                    <i className="fas fa-circle-notch animate-spin text-4xl text-red-600 mb-4"></i>
+                    <p className="text-gray-400">Loading seats from database...</p>
+                  </div>
+                ) : (() => {
                 const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-                const seats = SEATS_DATA;
+                const seats = allSeats.length > 0 ? allSeats : SEATS_DATA;
 
                 const renderSeat = (seat: Seat) => {
                   const isAlreadyBooked = seat.isBooked || bookedSeats.includes(seat.id);

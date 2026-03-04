@@ -1,6 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
+import AdminPanel from './AdminPanel';
+import { supabase } from '../src/supabaseClient';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,28 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onAuthClick, onLogout }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.email) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+
+      setIsAdmin(!!data && !error);
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,10 +67,26 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onAuthClick, onLogout }
                   <div className="p-4 border-b border-white/5">
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Signed in as</p>
                     <p className="text-xs font-bold truncate">{user.email}</p>
+                    {isAdmin && (
+                      <span className="inline-block mt-2 px-2 py-0.5 bg-red-600/20 border border-red-600/30 rounded text-[9px] font-bold text-red-400 uppercase">
+                        Admin
+                      </span>
+                    )}
                   </div>
                   <button className="w-full text-left px-4 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3">
                     <i className="fas fa-ticket-alt w-4"></i> My Bookings
                   </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => {
+                        setShowAdminPanel(true);
+                        setShowProfileMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-3 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all flex items-center gap-3"
+                    >
+                      <i className="fas fa-shield-alt w-4"></i> Admin Panel
+                    </button>
+                  )}
                   <button className="w-full text-left px-4 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3">
                     <i className="fas fa-cog w-4"></i> Settings
                   </button>
@@ -91,6 +130,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onAuthClick, onLogout }
           © {new Date().getFullYear()} HRFILM.COM. All rights reserved. Built for cinema lovers.
         </div>
       </footer>
+
+      {/* Admin Panel Modal */}
+      <AdminPanel 
+        isOpen={showAdminPanel} 
+        onClose={() => setShowAdminPanel(false)}
+        userEmail={user?.email}
+      />
     </div>
   );
 };
