@@ -522,10 +522,15 @@ const App: React.FC = () => {
 
     const element = qrRef.current;
     const opt = {
-      margin: 5,
+      margin: [3, 3, 3, 3],
       filename: `HRFILM-TICKET-${bookingId || bookingDetails?.transactionId}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 1.5 },
+      image: { type: 'jpeg' as const, quality: 0.95 },
+      html2canvas: { 
+        scale: 1.2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true
+      },
       jsPDF: { orientation: 'portrait' as const, unit: 'mm', format: 'a4' }
     };
 
@@ -994,23 +999,24 @@ const App: React.FC = () => {
           <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
             
             {/* Main Ticket Card - Optimized for PDF */}
-            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl overflow-hidden shadow-2xl border-4 border-red-600 p-6">
+            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-2xl overflow-hidden shadow-2xl border-3 border-red-600 p-4">
               
               {/* Header */}
-              <div className="text-center mb-4 pb-4 border-b-2 border-red-600">
-                <p className="text-red-500 font-black text-xs tracking-[0.3em] uppercase mb-2">Digital Online Pass</p>
-                <h1 className="text-3xl font-black text-white uppercase tracking-wider">CINEMA TICKET</h1>
-                <p className="text-gray-400 text-xs mt-2">Valid for Single Entry</p>
+              <div className="text-center mb-3 pb-3 border-b border-red-600">
+                <p className="text-red-500 font-bold text-[9px] tracking-[0.2em] uppercase mb-1">Digital Online Pass</p>
+                <h1 className="text-xl font-black text-white uppercase tracking-wide">CINEMA TICKET</h1>
+                <p className="text-gray-400 text-[9px] mt-1">Valid for Single Entry</p>
               </div>
 
               {/* Top Section with Poster */}
-              <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-white/10">
+              <div className="grid grid-cols-3 gap-3 mb-3 pb-3 border-b border-white/10">
                 {/* Movie Poster */}
                 <div className="col-span-1">
                   <img 
                     src={selectedMovie.posterUrl} 
                     alt={selectedMovie.title}
-                    className="w-full h-auto object-contain rounded-xl border-3 border-red-600 shadow-lg"
+                    className="w-full h-32 object-cover rounded-lg border-2 border-red-600"
+                    crossOrigin="anonymous"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/Gemini_Generated_Image_b8gvxzb8gvxzb8gv.png';
                     }}
@@ -1019,66 +1025,66 @@ const App: React.FC = () => {
 
                 {/* Movie Details */}
                 <div className="col-span-2">
-                  <div className="mb-4">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">FEATURE FILM</p>
-                    <h2 className="text-2xl font-black text-white uppercase leading-tight">{selectedMovie.title}</h2>
+                  <div className="mb-2">
+                    <p className="text-[8px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">FEATURE FILM</p>
+                    <h2 className="text-lg font-black text-white uppercase leading-tight">{selectedMovie.title}</h2>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                      <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Show Time</p>
-                      <p className="text-lg font-bold text-red-400">{bookingDetails.showTime}</p>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                      <p className="text-[8px] text-gray-500 uppercase font-bold mb-0.5">Show Time</p>
+                      <p className="text-sm font-bold text-red-400">{bookingDetails.showTime}</p>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                      <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Date</p>
-                      <p className="text-lg font-bold text-white">{bookingDetails.bookingDate}</p>
+                    <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                      <p className="text-[8px] text-gray-500 uppercase font-bold mb-0.5">Date</p>
+                      <p className="text-sm font-bold text-white">{bookingDetails.bookingDate}</p>
                     </div>
                   </div>
 
-                  <div className="bg-red-600/30 border-2 border-red-600 rounded-lg p-3">
-                    <p className="text-[10px] text-red-400 uppercase font-bold mb-1">Cinema Hall</p>
-                    <p className="text-sm font-bold text-red-300">HR Cinema • Vista Mall, Laspinas</p>
+                  <div className="bg-red-600/30 border border-red-600 rounded-lg p-2">
+                    <p className="text-[8px] text-red-400 uppercase font-bold mb-0.5">Cinema Hall</p>
+                    <p className="text-[10px] font-bold text-red-300">HR Cinema • Vista Mall, Laspinas</p>
                   </div>
                 </div>
               </div>
 
               {/* Seats Section */}
-              <div className="mb-4 pb-4 border-b border-white/10">
-                <p className="text-[11px] text-gray-400 uppercase font-bold tracking-widest mb-3">Seat Allocation</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="mb-3 pb-3 border-b border-white/10">
+                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-2">Seat Allocation</p>
+                <div className="flex flex-wrap gap-1.5">
                   {bookingDetails.selectedSeats.map(seat => (
-                    <span key={seat.id} className="bg-red-600 text-white px-3 py-1.5 rounded font-bold text-sm border border-red-500">
+                    <span key={seat.id} className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold border border-red-500">
                       {seat.id}
                     </span>
                   ))}
                 </div>
-                <p className="text-[10px] text-gray-500 mt-3">Total Seats: <span className="text-white font-bold text-sm">{bookingDetails.selectedSeats.length}</span></p>
+                <p className="text-[8px] text-gray-500 mt-2">Total Seats: <span className="text-white font-bold text-xs">{bookingDetails.selectedSeats.length}</span></p>
               </div>
 
               {/* QR Code */}
-              <div className="mb-4 pb-4 border-b border-white/10 flex flex-col items-center">
-                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-3">Scan for Entry</p>
-                <div className="bg-white rounded-xl p-4 border-3 border-white shadow-xl">
+              <div className="mb-3 pb-3 border-b border-white/10 flex flex-col items-center">
+                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-2">Scan for Entry</p>
+                <div className="bg-white rounded-lg p-3 border-2 border-white">
                   <BeautifulQR value={`https://hr-films111.vercel.app/ticket/${bookingId || bookingDetails.transactionId}`} />
                 </div>
               </div>
 
               {/* Booking Info */}
-              <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-white/10">
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Booking ID</p>
-                  <p className="text-sm font-mono font-bold text-yellow-400 break-all">{bookingId || bookingDetails.transactionId}</p>
+              <div className="grid grid-cols-2 gap-2 mb-3 pb-3 border-b border-white/10">
+                <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                  <p className="text-[8px] text-gray-500 uppercase font-bold mb-0.5">Booking ID</p>
+                  <p className="text-[10px] font-mono font-bold text-yellow-400 break-all">{bookingId || bookingDetails.transactionId}</p>
                 </div>
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Total Amount</p>
-                  <p className="text-lg font-bold text-green-400">{currencySymbol}{bookingDetails.totalAmount}</p>
+                <div className="bg-white/5 rounded-lg p-2 border border-white/10">
+                  <p className="text-[8px] text-gray-500 uppercase font-bold mb-0.5">Total Amount</p>
+                  <p className="text-sm font-bold text-green-400">{currencySymbol}{bookingDetails.totalAmount}</p>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="text-center pt-4 border-t-2 border-red-600">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Terms & Conditions</p>
-                <p className="text-[9px] text-gray-600 leading-relaxed">
+              <div className="text-center pt-2 border-t border-red-600">
+                <p className="text-[8px] text-gray-500 uppercase font-bold tracking-widest mb-1">Terms & Conditions</p>
+                <p className="text-[7px] text-gray-600 leading-relaxed">
                   This pass is valid for one-time entry only. Present this digital pass at the cinema entrance. Keep your booking ID safe for reference.
                 </p>
               </div>
