@@ -993,17 +993,24 @@ const App: React.FC = () => {
         {step === BookingStep.TICKET && bookingDetails && (
           <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
             
-            {/* Main Ticket Card */}
-            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+            {/* Main Ticket Card - Optimized for PDF */}
+            <div ref={qrRef} className="bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl overflow-hidden shadow-2xl border-4 border-red-600 p-8">
               
+              {/* Header */}
+              <div className="text-center mb-6 pb-6 border-b-2 border-red-600">
+                <p className="text-red-500 font-black text-xs tracking-[0.3em] uppercase mb-2">Digital Online Pass</p>
+                <h1 className="text-3xl font-black text-white uppercase tracking-wider">CINEMA TICKET</h1>
+                <p className="text-gray-400 text-xs mt-2">Valid for Single Entry</p>
+              </div>
+
               {/* Top Section with Poster */}
-              <div className="grid grid-cols-3 gap-4 p-6">
+              <div className="grid grid-cols-3 gap-6 mb-6 pb-6 border-b border-white/10">
                 {/* Movie Poster */}
                 <div className="col-span-1">
                   <img 
                     src={selectedMovie.posterUrl} 
                     alt={selectedMovie.title}
-                    className="w-full h-40 object-cover rounded-xl border-2 border-red-600"
+                    className="w-full h-48 object-cover rounded-xl border-3 border-red-600 shadow-lg"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://dmsypezifjzqiugoyciq.supabase.co/storage/v1/object/public/poster/Gemini_Generated_Image_b8gvxzb8gvxzb8gv.png';
                     }}
@@ -1012,91 +1019,89 @@ const App: React.FC = () => {
 
                 {/* Movie Details */}
                 <div className="col-span-2">
-                  <div className="mb-3">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">FILM</p>
-                    <h2 className="text-xl font-black text-white uppercase leading-tight">{selectedMovie.title}</h2>
+                  <div className="mb-4">
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">FEATURE FILM</p>
+                    <h2 className="text-2xl font-black text-white uppercase leading-tight">{selectedMovie.title}</h2>
                   </div>
                   
-                  <div className="space-y-2 mb-4">
-                    <div>
-                      <p className="text-[9px] text-gray-500 uppercase font-bold">Show Time</p>
-                      <p className="text-sm font-bold text-white">{bookingDetails.showTime}</p>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                      <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Show Time</p>
+                      <p className="text-lg font-bold text-red-400">{bookingDetails.showTime}</p>
                     </div>
-                    <div>
-                      <p className="text-[9px] text-gray-500 uppercase font-bold">Date</p>
-                      <p className="text-sm font-bold text-white">{bookingDetails.bookingDate}</p>
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                      <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Date</p>
+                      <p className="text-lg font-bold text-white">{bookingDetails.bookingDate}</p>
                     </div>
                   </div>
 
-                  <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-2">
-                    <p className="text-[9px] text-red-400 uppercase font-bold">Hall</p>
-                    <p className="text-sm font-bold text-red-300">HR Cinema • Vista Mall</p>
+                  <div className="bg-red-600/30 border-2 border-red-600 rounded-lg p-3">
+                    <p className="text-[10px] text-red-400 uppercase font-bold mb-1">Cinema Hall</p>
+                    <p className="text-sm font-bold text-red-300">HR Cinema • Vista Mall, Laspinas</p>
                   </div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-white/10"></div>
-
               {/* Seats Section */}
-              <div className="px-6 py-4">
-                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-3">Your Seats</p>
-                <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-6 pb-6 border-b border-white/10">
+                <p className="text-[11px] text-gray-400 uppercase font-bold tracking-widest mb-3">Seat Allocation</p>
+                <div className="flex flex-wrap gap-2">
                   {bookingDetails.selectedSeats.map(seat => (
-                    <span key={seat.id} className="bg-red-600 text-white px-3 py-1 rounded-lg font-black text-sm">
+                    <span key={seat.id} className="bg-red-600 text-white px-4 py-2 rounded-lg font-black text-lg shadow-lg border-2 border-red-500">
                       {seat.id}
                     </span>
                   ))}
                 </div>
-                <p className="text-[10px] text-gray-500">Total Seats: <span className="text-white font-bold">{bookingDetails.selectedSeats.length}</span></p>
+                <p className="text-[10px] text-gray-500 mt-3">Total Seats: <span className="text-white font-bold text-sm">{bookingDetails.selectedSeats.length}</span></p>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-white/10"></div>
-
               {/* QR Code */}
-              <div className="p-6 flex justify-center">
-                <div className="bg-white rounded-xl p-4 border-2 border-white">
+              <div className="mb-6 pb-6 border-b border-white/10 flex flex-col items-center">
+                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-4">Scan for Entry</p>
+                <div className="bg-white rounded-xl p-6 border-3 border-white shadow-xl">
                   <BeautifulQR value={`https://hr-films111.vercel.app/ticket/${bookingId || bookingDetails.transactionId}`} />
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-white/10"></div>
-
               {/* Booking Info */}
-              <div className="px-6 py-4 grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-2 gap-4 mb-6 pb-6 border-b border-white/10">
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Booking ID</p>
-                  <p className="text-sm font-mono font-bold text-white break-all">{bookingId || bookingDetails.transactionId}</p>
+                  <p className="text-sm font-mono font-bold text-yellow-400 break-all">{bookingId || bookingDetails.transactionId}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Amount</p>
-                  <p className="text-sm font-bold text-green-400">{currencySymbol}{bookingDetails.totalAmount}</p>
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Total Amount</p>
+                  <p className="text-lg font-bold text-green-400">{currencySymbol}{bookingDetails.totalAmount}</p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="px-6 pb-6 pt-4 flex gap-3">
-                <button 
-                  onClick={downloadQRCode}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold text-sm uppercase transition-all"
-                  title="Download QR"
-                >
-                  <i className="fas fa-download mr-2"></i> QR
-                </button>
-                <button 
-                  onClick={downloadTicketPDF}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold text-sm uppercase transition-all"
-                  title="Save PDF"
-                >
-                  <i className="fas fa-file-pdf mr-2"></i> PDF
-                </button>
+              {/* Footer */}
+              <div className="text-center pt-4 border-t-2 border-red-600">
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Terms & Conditions</p>
+                <p className="text-[9px] text-gray-600 leading-relaxed">
+                  This pass is valid for one-time entry only. Present this digital pass at the cinema entrance. Keep your booking ID safe for reference.
+                </p>
               </div>
             </div>
 
             {/* Action Buttons Below Ticket */}
-            <div className="flex flex-col gap-3 mt-6">
+            <div className="flex flex-col gap-3 mt-8">
+              <button 
+                onClick={downloadTicketPDF}
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-sm uppercase transition-all shadow-lg border-2 border-red-500 flex items-center justify-center gap-2"
+                title="Save as PDF"
+              >
+                <i className="fas fa-file-pdf text-lg"></i> Download Online Pass (PDF)
+              </button>
+
+              <button 
+                onClick={downloadQRCode}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm uppercase transition-all border border-blue-500"
+                title="Download QR"
+              >
+                <i className="fas fa-download mr-2"></i> Download QR Code
+              </button>
+
               <button 
                 onClick={handleResendTicket}
                 disabled={isResending}
@@ -1116,7 +1121,7 @@ const App: React.FC = () => {
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <i className="fas fa-paper-plane"></i> Resend Ticket
+                    <i className="fas fa-paper-plane"></i> Send to Email
                   </span>
                 )}
               </button>
@@ -1125,7 +1130,7 @@ const App: React.FC = () => {
                 onClick={() => { setStep(BookingStep.MOVIE_INFO); setSelectedSeats([]); setPersonalContact(''); }}
                 className="w-full py-3 text-sm font-bold text-white/50 hover:text-white transition-all uppercase tracking-widest border border-white/10 rounded-lg"
               >
-                Back to Home
+                Book Another Ticket
               </button>
             </div>
           </div>
